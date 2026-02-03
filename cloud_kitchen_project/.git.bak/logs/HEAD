@@ -1,6 +1,0 @@
-0000000000000000000000000000000000000000 8268331bba90c8940064ff266858afce6c24650f Prakhar Shukla <prakhar230125@gmail.com> 1769877120 +0530	clone: from https://github.com/anishreetech/cloud_kitchen_project.git
-8268331bba90c8940064ff266858afce6c24650f e95210616c0989cf79119fc6d34e7b513df867f0 Prakhar Shukla <prakhar230125@gmail.com> 1769877145 +0530	checkout: moving from main to dev
-e95210616c0989cf79119fc6d34e7b513df867f0 8268331bba90c8940064ff266858afce6c24650f Prakhar Shukla <prakhar230125@gmail.com> 1770010649 +0530	checkout: moving from dev to dev-prakhar
-8268331bba90c8940064ff266858afce6c24650f e95210616c0989cf79119fc6d34e7b513df867f0 Prakhar Shukla <prakhar230125@gmail.com> 1770025549 +0530	checkout: moving from dev-prakhar to dev
-e95210616c0989cf79119fc6d34e7b513df867f0 e95210616c0989cf79119fc6d34e7b513df867f0 Prakhar Shukla <prakhar230125@gmail.com> 1770049408 +0530	checkout: moving from dev to dev
-e95210616c0989cf79119fc6d34e7b513df867f0 b76f35ccd93ef86176d8d9a9f31820a08048ff33 Prakhar Shukla <prakhar230125@gmail.com> 1770049903 +0530	pull origin dev: Fast-forward
