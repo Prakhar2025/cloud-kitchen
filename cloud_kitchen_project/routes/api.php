@@ -3,6 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\User\MenuController;
+use App\Http\Controllers\Api\User\CartController;
+use App\Http\Controllers\Api\User\OrderController;
+use App\Http\Controllers\Api\User\AddressController;
+use App\Http\Controllers\Api\User\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,6 +79,49 @@ Route::prefix('v1')->group(function () {
         // POST /api/v1/logout-all
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])
             ->name('api.v1.logout-all');
+
+        // ====================================================================
+        // User Module Routes
+        // ====================================================================
+
+        // Menu
+        // GET /api/v1/user/menu
+        Route::get('/user/menu', [MenuController::class, 'index'])->name('api.v1.user.menu.index');
+
+        // Cart
+        // GET /api/v1/user/cart
+        Route::get('/user/cart', [CartController::class, 'index'])->name('api.v1.user.cart.index');
+        // POST /api/v1/user/cart/{id}/add
+        Route::post('/user/cart/{id}/add', [CartController::class, 'add'])->name('api.v1.user.cart.add');
+        // POST /api/v1/user/cart/{id}/decrease
+        Route::post('/user/cart/{id}/decrease', [CartController::class, 'decrease'])->name('api.v1.user.cart.decrease');
+        // DELETE /api/v1/user/cart/{id}
+        Route::delete('/user/cart/{id}', [CartController::class, 'remove'])->name('api.v1.user.cart.remove');
+
+        // Orders
+        // GET /api/v1/user/orders
+        Route::get('/user/orders', [OrderController::class, 'index'])->name('api.v1.user.orders.index');
+        // POST /api/v1/user/orders/place
+        Route::post('/user/orders/place', [OrderController::class, 'placeOrder'])->name('api.v1.user.orders.place');
+        // POST /api/v1/user/orders/{order}/cancel
+        Route::post('/user/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('api.v1.user.orders.cancel');
+        // POST /api/v1/user/orders/{order}/rate
+        Route::post('/user/orders/{order}/rate', [OrderController::class, 'rate'])->name('api.v1.user.orders.rate');
+
+        // Address
+        // GET /api/v1/user/addresses
+        Route::get('/user/addresses', [AddressController::class, 'index'])->name('api.v1.user.addresses.index');
+        // POST /api/v1/user/addresses
+        Route::post('/user/addresses', [AddressController::class, 'store'])->name('api.v1.user.addresses.store');
+        // PUT /api/v1/user/addresses/{address}
+        Route::put('/user/addresses/{address}', [AddressController::class, 'update'])->name('api.v1.user.addresses.update');
+        // DELETE /api/v1/user/addresses/{address}
+        Route::delete('/user/addresses/{address}', [AddressController::class, 'destroy'])->name('api.v1.user.addresses.destroy');
+
+        // Profile
+        // POST /api/v1/user/profile/update
+        Route::post('/user/profile/update', [ProfileController::class, 'update'])->name('api.v1.user.profile.update');
+
     });
 });
 

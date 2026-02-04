@@ -14,7 +14,8 @@
             "bundleIdentifier": "com.cloudkitchen.app"
         },
         "android": {
-            "package": "com.cloudkitchen.app"
+            "package": "com.cloudkitchen.app",
+            "usesCleartextTraffic": true
         },
         "web": {
             "bundler": "metro"

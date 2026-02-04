@@ -5,7 +5,7 @@
  * 
  * Main application entry point with:
  * - AuthProvider for global authentication state
- * - Navigation setup
+ * - Navigation setup (Stack + Bottom Tabs)
  * - Conditional rendering based on auth status
  */
 
@@ -13,20 +13,27 @@ import React from 'react';
 import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 // Context
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 // Screens
 import LoginScreen from './src/screens/Auth/LoginScreen';
+import MenuScreen from './src/screens/User/MenuScreen';
+import CartScreen from './src/screens/User/CartScreen';
+import OrdersScreen from './src/screens/User/OrdersScreen';
+import ProfileScreen from './src/screens/User/ProfileScreen';
 
 // Styles
 import Colors from './src/styles/colors';
 
-// Create navigation stack
+// Create navigators
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 // =============================================================================
 // Loading Screen Component
@@ -44,39 +51,42 @@ const LoadingScreen = () => (
 );
 
 // =============================================================================
-// Home Screen Placeholder (Post-Login)
+// User Tab Navigator
 // =============================================================================
 
-const HomeScreen = () => {
-    const { user, logout } = useAuth();
-
+const UserTabs = () => {
     return (
-        <View style={styles.homeContainer}>
-            <View style={styles.homeContent}>
-                <Text style={styles.homeEmoji}>🎉</Text>
-                <Text style={styles.homeTitle}>Welcome, {user?.name}!</Text>
-                <Text style={styles.homeSubtitle}>You are successfully logged in.</Text>
+        <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarActiveTintColor: Colors.primary,
+                tabBarInactiveTintColor: 'gray',
+                tabBarStyle: {
+                    paddingBottom: 5,
+                    height: 60,
+                },
+                tabBarIcon: ({ focused, color, size }) => {
+                    let iconName;
 
-                <View style={styles.userCard}>
-                    <Text style={styles.userCardTitle}>Your Account</Text>
-                    <Text style={styles.userCardItem}>📧 {user?.email}</Text>
-                    <Text style={styles.userCardItem}>👤 {user?.name}</Text>
-                    {user?.is_admin && (
-                        <Text style={styles.userCardItem}>⭐ Admin Account</Text>
-                    )}
-                </View>
+                    if (route.name === 'Menu') {
+                        iconName = focused ? 'restaurant' : 'restaurant-outline';
+                    } else if (route.name === 'Cart') {
+                        iconName = focused ? 'cart' : 'cart-outline';
+                    } else if (route.name === 'Orders') {
+                        iconName = focused ? 'receipt' : 'receipt-outline';
+                    } else if (route.name === 'Profile') {
+                        iconName = focused ? 'person' : 'person-outline';
+                    }
 
-                <Text style={styles.homeNote}>
-                    The menu, cart, and ordering features will be available in future updates!
-                </Text>
-
-                <View style={styles.logoutButton}>
-                    <Text style={styles.logoutButtonText} onPress={logout}>
-                        🚪 Logout
-                    </Text>
-                </View>
-            </View>
-        </View>
+                    return <Ionicons name={iconName} size={size} color={color} />;
+                },
+            })}
+        >
+            <Tab.Screen name="Menu" component={MenuScreen} />
+            <Tab.Screen name="Cart" component={CartScreen} />
+            <Tab.Screen name="Orders" component={OrdersScreen} />
+            <Tab.Screen name="Profile" component={ProfileScreen} />
+        </Tab.Navigator>
     );
 };
 
@@ -103,13 +113,12 @@ const AppNavigator = () => {
             {isAuthenticated ? (
                 // Authenticated routes
                 <>
-                    <Stack.Screen name="Home" component={HomeScreen} />
+                    <Stack.Screen name="Main" component={UserTabs} />
                 </>
             ) : (
                 // Unauthenticated routes
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />
-                    {/* Future: Register, ForgotPassword screens */}
                 </>
             )}
         </Stack.Navigator>
@@ -150,7 +159,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 25,
-        backgroundColor: Colors.PRIMARY.light + '20',
+        backgroundColor: Colors.PRIMARY ? Colors.PRIMARY.light + '20' : '#ffebee', // Fallback safety
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
@@ -163,7 +172,7 @@ const styles = StyleSheet.create({
     loadingTitle: {
         fontSize: 24,
         fontWeight: '700',
-        color: Colors.TEXT.primary,
+        color: Colors.TEXT ? Colors.TEXT.primary : '#000',
         marginBottom: 24,
     },
     loadingSpinner: {
@@ -171,76 +180,6 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 14,
-        color: Colors.TEXT.secondary,
-    },
-
-    // Home Screen
-    homeContainer: {
-        flex: 1,
-        backgroundColor: Colors.BACKGROUND.secondary,
-    },
-    homeContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    homeEmoji: {
-        fontSize: 64,
-        marginBottom: 16,
-    },
-    homeTitle: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: Colors.TEXT.primary,
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    homeSubtitle: {
-        fontSize: 16,
-        color: Colors.TEXT.secondary,
-        marginBottom: 32,
-        textAlign: 'center',
-    },
-    userCard: {
-        backgroundColor: Colors.white,
-        borderRadius: 16,
-        padding: 20,
-        width: '100%',
-        shadowColor: Colors.SHADOW.default,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-        marginBottom: 24,
-    },
-    userCardTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.TEXT.primary,
-        marginBottom: 12,
-    },
-    userCardItem: {
-        fontSize: 15,
-        color: Colors.TEXT.secondary,
-        marginBottom: 8,
-    },
-    homeNote: {
-        fontSize: 14,
-        color: Colors.TEXT.muted,
-        textAlign: 'center',
-        fontStyle: 'italic',
-        marginBottom: 24,
-    },
-    logoutButton: {
-        backgroundColor: Colors.primary,
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 32,
-    },
-    logoutButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.white,
+        color: Colors.TEXT ? Colors.TEXT.secondary : '#666',
     },
 });
