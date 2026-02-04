@@ -31,7 +31,7 @@ const getDevApiUrl = () => {
 
   // For physical device testing, you can manually set your IP here
   // or use an environment variable
-  const PHYSICAL_DEVICE_IP = null; // e.g., '192.168.1.100'
+  const PHYSICAL_DEVICE_IP = '192.168.43.211'; // Your computer's local IP
 
   // If physical device IP is configured, use it
   if (PHYSICAL_DEVICE_IP) {
