@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\User;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Cart;
-use App\Models\Address;
+use App\Models\UserAddress;  // Fixed: Changed from Address to UserAddress
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +28,11 @@ class OrderController extends Controller
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'address_id' => 'required|exists:addresses,id',
+            'address_id' => 'required|exists:user_addresses,id',  // Fixed: Changed from addresses to user_addresses
             'payment_method' => 'required|in:cod,online',
         ]);
 
-        $address = Address::where('id', $request->address_id)
+        $address = UserAddress::where('id', $request->address_id)  // Fixed: Changed from Address to UserAddress
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
@@ -66,6 +66,7 @@ class OrderController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'food_item_id' => $item->food_item_id,
+                    'food_name' => $item->foodItem->name,  // Added: Include food name for order history
                     'quantity' => $item->quantity,
                     'price' => $item->foodItem->price
                 ]);

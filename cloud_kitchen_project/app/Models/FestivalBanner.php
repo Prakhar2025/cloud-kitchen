@@ -16,6 +16,18 @@ class FestivalBanner extends Model
         'food_item_id',
     ];
 
+    // Add image URL for API responses
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+        // Return full URL for mobile app
+        return url('uploads/banners/' . $this->image);
+    }
+
     public function foodItem(){
         return $this->belongsTo(FoodItem::class);
     }

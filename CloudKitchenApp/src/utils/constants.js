@@ -15,35 +15,36 @@
 // =============================================================================
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
- * Automatically detect the correct API base URL based on platform and device type
+ * Automatically detect the correct API base URL using Expo's built-in IP detection
  * 
- * - Android Emulator: Uses 10.0.2.2 (Android's special alias for host machine's localhost)
- * - iOS Simulator: Uses localhost/127.0.0.1
- * - Physical Device: Set PHYSICAL_DEVICE_IP environment variable or manually configure
- * 
- * To use with physical device, create a .env file in project root:
- * PHYSICAL_DEVICE_IP=192.168.1.100
+ * - Expo automatically detects your dev machine's IP address
+ * - Works on physical devices, emulators, and simulators
+ * - No manual IP configuration needed - updates automatically when you change networks
+ * - Each team member gets their own machine's IP automatically
  */
 const getDevApiUrl = () => {
   const PORT = '8000';
 
-  // For physical device testing, you can manually set your IP here
-  // or use an environment variable
-  const PHYSICAL_DEVICE_IP = '192.168.43.211'; // Your computer's local IP
+  // Expo automatically provides your dev machine's IP address
+  // This is the same IP Expo uses to connect to Metro bundler
+  const expoIP = Constants.expoConfig?.hostUri?.split(':')[0];
 
-  // If physical device IP is configured, use it
-  if (PHYSICAL_DEVICE_IP) {
-    return `http://${PHYSICAL_DEVICE_IP}:${PORT}`;
+  if (expoIP) {
+    console.log(`🌐 Using Expo detected IP: ${expoIP}`);
+    return `http://${expoIP}:${PORT}`;
   }
 
-  // Android emulator needs special IP to access host machine
+  // Fallback for Android emulator
   if (Platform.OS === 'android') {
+    console.log('📱 Using Android emulator IP: 10.0.2.2');
     return `http://10.0.2.2:${PORT}`;
   }
 
-  // iOS simulator and default
+  // Fallback for iOS simulator
+  console.log('📱 Using iOS simulator IP: localhost');
   return `http://127.0.0.1:${PORT}`;
 };
 
