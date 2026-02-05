@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Controllers\Api\User;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use Illuminate\Http\Request;
+
+class MenuController extends Controller
+{
+    public function index()
+    {
+        $type = request('type');   // veg | non-veg | null
+        $search = request('search'); // search text | null
+        
+        $categories = Category::where('status', 1)
+            ->with([
+                'foodItems' => function ($query) use ($type, $search) {
+
+                    $query->where('is_available', 1)
+                        ->withAvg('ratings', 'rating')
+                        ->withCount('ratings');
+
+                    if ($type) {
+                        $query->where('type', $type);
+                    }
+
+                    if ($search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
+                        });
+                    }
+                }
+
+            ])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ]);
+    }
+}

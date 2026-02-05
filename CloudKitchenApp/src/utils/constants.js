@@ -14,27 +14,46 @@
 // API Configuration
 // =============================================================================
 
+import { Platform } from 'react-native';
+
+/**
+ * Automatically detect the correct API base URL based on platform and device type
+ * 
+ * - Android Emulator: Uses 10.0.2.2 (Android's special alias for host machine's localhost)
+ * - iOS Simulator: Uses localhost/127.0.0.1
+ * - Physical Device: Set PHYSICAL_DEVICE_IP environment variable or manually configure
+ * 
+ * To use with physical device, create a .env file in project root:
+ * PHYSICAL_DEVICE_IP=192.168.1.100
+ */
+const getDevApiUrl = () => {
+  const PORT = '8000';
+
+  // For physical device testing, you can manually set your IP here
+  // or use an environment variable
+  const PHYSICAL_DEVICE_IP = '192.168.43.211'; // Your computer's local IP
+
+  // If physical device IP is configured, use it
+  if (PHYSICAL_DEVICE_IP) {
+    return `http://${PHYSICAL_DEVICE_IP}:${PORT}`;
+  }
+
+  // Android emulator needs special IP to access host machine
+  if (Platform.OS === 'android') {
+    return `http://10.0.2.2:${PORT}`;
+  }
+
+  // iOS simulator and default
+  return `http://127.0.0.1:${PORT}`;
+};
+
 /**
  * Base URL for the Laravel API
- * 
- * Development: Your local Laravel server (use your machine's IP for physical device)
- * Production: Your deployed API server URL
- * 
- * NOTE: When testing on a physical device, replace 'localhost' with your
- * computer's local IP address (e.g., '192.168.1.100')
- * 
- * For Android Emulator: Use '10.0.2.2' instead of 'localhost'
- * For iOS Simulator: 'localhost' works fine
+ * Automatically configured for development, manually set for production
  */
 export const API_BASE_URL = __DEV__
-  ? 'http://192.168.125.241:8000'  // Your PC's IP - physical device
+  ? getDevApiUrl()
   : 'https://your-production-api.com';
-
-// Alternative for iOS Simulator
-// export const API_BASE_URL = 'http://localhost:8000';
-
-// Alternative for Physical Device (replace with your local IP)
-// export const API_BASE_URL = 'http://192.168.1.100:8000';
 
 /**
  * API Version prefix
