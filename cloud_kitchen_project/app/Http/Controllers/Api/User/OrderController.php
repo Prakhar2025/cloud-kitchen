@@ -28,11 +28,16 @@ class OrderController extends Controller
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'address_id' => 'required|exists:user_addresses,id',  // Fixed: Changed from addresses to user_addresses
+            'address_id' => 'required|exists:user_addresses,id',
             'payment_method' => 'required|in:cod,online',
+            'subtotal' => 'required|numeric|min:0',
+            'gst_amount' => 'required|numeric|min:0',
+            'delivery_charge' => 'required|numeric|min:0',
+            'payment_processing_fee' => 'required|numeric|min:0',
+            'total_amount' => 'required|numeric|min:0',
         ]);
 
-        $address = UserAddress::where('id', $request->address_id)  // Fixed: Changed from Address to UserAddress
+        $address = UserAddress::where('id', $request->address_id)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
@@ -45,9 +50,36 @@ class OrderController extends Controller
             ], 400);
         }
 
-        $total = $cartItems->sum(function($item) {
+        // Calculate and verify subtotal from cart items
+        $calculatedSubtotal = $cartItems->sum(function($item) {
             return $item->foodItem->price * $item->quantity;
         });
+
+        // Verify client calculations match server calculations (security check)
+        if (abs($calculatedSubtotal - $request->subtotal) > 0.01) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subtotal mismatch. Please refresh and try again.'
+            ], 400);
+        }
+
+        // Verify GST calculation (18%)
+        $calculatedGst = round($calculatedSubtotal * 0.18, 2);
+        if (abs($calculatedGst - $request->gst_amount) > 0.01) {
+            return response()->json([
+                'success' => false,
+                'message' => 'GST calculation mismatch. Please refresh and try again.'
+            ], 400);
+        }
+
+        // Verify total calculation
+        $calculatedTotal = $calculatedSubtotal + $request->gst_amount + $request->delivery_charge + $request->payment_processing_fee;
+        if (abs($calculatedTotal - $request->total_amount) > 0.01) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Total amount mismatch. Please refresh and try again.'
+            ], 400);
+        }
 
         try {
             DB::beginTransaction();
@@ -55,7 +87,11 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => auth()->id(),
                 'address_id' => $address->id,
-                'total_amount' => $total,
+                'subtotal' => $request->subtotal,
+                'gst_amount' => $request->gst_amount,
+                'delivery_charge' => $request->delivery_charge,
+                'payment_processing_fee' => $request->payment_processing_fee,
+                'total_amount' => $request->total_amount,
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'pending',
                 'status' => 'pending',
@@ -66,7 +102,7 @@ class OrderController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'food_item_id' => $item->food_item_id,
-                    'food_name' => $item->foodItem->name,  // Added: Include food name for order history
+                    'food_name' => $item->foodItem->name,
                     'quantity' => $item->quantity,
                     'price' => $item->foodItem->price
                 ]);

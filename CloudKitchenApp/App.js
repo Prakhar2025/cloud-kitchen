@@ -25,6 +25,8 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import MenuScreen from './src/screens/User/MenuScreen';
 import CartScreen from './src/screens/User/CartScreen';
+import CartConfirmationScreen from './src/screens/User/CartConfirmationScreen';
+import CheckoutScreen from './src/screens/User/CheckoutScreen';
 import OrdersScreen from './src/screens/User/OrdersScreen';
 import ProfileScreen from './src/screens/User/ProfileScreen';
 
@@ -114,6 +116,16 @@ const AppNavigator = () => {
                 // Authenticated routes
                 <>
                     <Stack.Screen name="Main" component={UserTabs} />
+                    <Stack.Screen
+                        name="CartConfirmation"
+                        component={CartConfirmationScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Checkout"
+                        component={CheckoutScreen}
+                        options={{ headerShown: false }}
+                    />
                 </>
             ) : (
                 // Unauthenticated routes

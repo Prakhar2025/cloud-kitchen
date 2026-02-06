@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\FestivalBanner;
 use Illuminate\Http\Request;
 
 class MenuController extends Controller
@@ -13,6 +14,15 @@ class MenuController extends Controller
         $type = request('type');   // veg | non-veg | null
         $search = request('search'); // search text | null
         
+        $banners = FestivalBanner::where('is_active', 1)
+            ->where(function($q) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+            })
+            ->get();
+
         $categories = Category::where('status', 1)
             ->with([
                 'foodItems' => function ($query) use ($type, $search) {

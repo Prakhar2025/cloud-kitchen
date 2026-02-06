@@ -16,12 +16,34 @@ const MenuScreen = ({ navigation }) => {
         const result = await getMenu({ search: searchText });
         if (result.success) {
             setCategories(result.data);
-            if (result.data.length > 0 && !selectedCategory) {
-                // setSelectedCategory(result.data[0].id);
-            }
         }
         setLoading(false);
     };
+
+    const handleCategorySelect = (categoryId) => {
+        setSelectedCategory(selectedCategory === categoryId ? null : categoryId);
+    };
+
+    const renderCategoryFilterItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.categoryFilterItem}
+            onPress={() => handleCategorySelect(item.id)}
+        >
+            <View style={[
+                styles.categoryImageContainer,
+                selectedCategory === item.id && styles.selectedCategoryContainer
+            ]}>
+                <Image
+                    source={{ uri: item.image_url || 'https://via.placeholder.com/100' }}
+                    style={styles.categoryFilterImage}
+                />
+            </View>
+            <Text style={[
+                styles.categoryFilterName,
+                selectedCategory === item.id && styles.selectedCategoryText
+            ]} numberOfLines={1}>{item.name}</Text>
+        </TouchableOpacity>
+    );
 
     useEffect(() => {
         fetchMenu();
@@ -75,6 +97,10 @@ const MenuScreen = ({ navigation }) => {
         </View>
     );
 
+    const filteredCategories = selectedCategory
+        ? categories.filter(cat => cat.id === selectedCategory)
+        : categories;
+
     if (loading && categories.length === 0) {
         return (
             <View style={styles.centered}>
@@ -99,8 +125,19 @@ const MenuScreen = ({ navigation }) => {
                 />
             </View>
 
+            <View style={styles.categoryFilterContainer}>
+                <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={[{ id: null, name: 'All', image_url: 'https://img.icons8.com/color/96/000000/restaurant.png' }, ...categories]}
+                    renderItem={renderCategoryFilterItem}
+                    keyExtractor={item => item.id ? item.id.toString() : 'all'}
+                    contentContainerStyle={styles.categoryFilterList}
+                />
+            </View>
+
             <FlatList
-                data={categories}
+                data={filteredCategories}
                 renderItem={renderCategory}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
@@ -135,6 +172,54 @@ const styles = StyleSheet.create({
     searchContainer: {
         padding: 16,
         backgroundColor: Colors.white,
+    },
+    categoryFilterContainer: {
+        backgroundColor: Colors.white,
+        paddingBottom: 16,
+    },
+    categoryFilterList: {
+        paddingHorizontal: 16,
+    },
+    categoryFilterItem: {
+        alignItems: 'center',
+        marginRight: 16,
+        width: 75,
+    },
+    categoryImageContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        padding: 2,
+        borderWidth: 2,
+        borderColor: 'transparent',
+        marginBottom: 6,
+        backgroundColor: Colors.white,
+        // Shadow for iOS
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        // Elevation for Android
+        elevation: 3,
+    },
+    selectedCategoryContainer: {
+        borderColor: Colors.primary,
+    },
+    categoryFilterImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 30,
+        backgroundColor: Colors.BACKGROUND.secondary,
+    },
+    categoryFilterName: {
+        fontSize: 12,
+        color: Colors.TEXT.secondary,
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    selectedCategoryText: {
+        color: Colors.primary,
+        fontWeight: 'bold',
     },
     searchInput: {
         backgroundColor: Colors.BACKGROUND.secondary,

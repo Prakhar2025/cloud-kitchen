@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getCart, removeFromCart, decreaseQuantity, addToCart } from '../../api/cart';
-import { placeOrder } from '../../api/order';
 import { getAddresses } from '../../api/user';
 
 const CartScreen = ({ navigation }) => {
@@ -55,7 +54,7 @@ const CartScreen = ({ navigation }) => {
         if (result.success) fetchCart();
     };
 
-    const handleCheckout = async () => {
+    const handleProceedToCheckout = () => {
         if (!defaultAddressId) {
             Alert.alert("No Address", "Please add an address in your profile to continue.", [
                 { text: "Go to Profile", onPress: () => navigation.navigate('Profile') }
@@ -63,37 +62,12 @@ const CartScreen = ({ navigation }) => {
             return;
         }
 
-        Alert.alert(
-            "Confirm Order",
-            "Are you sure you want to place this order with Cash on Delivery?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Place Order",
-                    onPress: async () => {
-                        setPlacingOrder(true);
-                        const result = await placeOrder({
-                            address_id: defaultAddressId,
-                            payment_method: 'cod'
-                        });
-                        setPlacingOrder(false);
+        if (cartItems.length === 0) {
+            Alert.alert("Empty Cart", "Please add items to your cart first.");
+            return;
+        }
 
-                        if (result.success) {
-                            Alert.alert("Success", "Order placed successfully!", [
-                                {
-                                    text: "OK", onPress: () => {
-                                        fetchCart();
-                                        navigation.navigate('Orders');
-                                    }
-                                }
-                            ]);
-                        } else {
-                            Alert.alert("Error", result.error);
-                        }
-                    }
-                }
-            ]
-        );
+        navigation.navigate('CartConfirmation');
     };
 
     const renderItem = ({ item }) => (
@@ -150,19 +124,15 @@ const CartScreen = ({ navigation }) => {
 
                     <View style={styles.footer}>
                         <View style={styles.totalContainer}>
-                            <Text style={styles.totalLabel}>Total:</Text>
+                            <Text style={styles.totalLabel}>Subtotal:</Text>
                             <Text style={styles.totalValue}>₹{subtotal}</Text>
                         </View>
                         <TouchableOpacity
                             style={[styles.checkoutButton, placingOrder && { opacity: 0.7 }]}
-                            onPress={handleCheckout}
+                            onPress={handleProceedToCheckout}
                             disabled={placingOrder}
                         >
-                            {placingOrder ? (
-                                <ActivityIndicator color={Colors.white} />
-                            ) : (
-                                <Text style={styles.checkoutButtonText}>Place Order (COD)</Text>
-                            )}
+                            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
                         </TouchableOpacity>
                         {!defaultAddressId && (
                             <Text style={styles.addressWarning}>Please add an address first!</Text>
