@@ -1,21 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
 import { addToCart } from '../../api/cart';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BANNER_WIDTH = SCREEN_WIDTH - 32; // Screen width minus horizontal padding
+
 const MenuScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
+    const [banners, setBanners] = useState([]);
     const [searchText, setSearchText] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const scrollX = useRef(new Animated.Value(0)).current;
+    const scrollViewRef = useRef(null);
+    const animationRef = useRef(null);
+    const isPaused = useRef(false);
 
     const fetchMenu = async () => {
         setLoading(true);
         const result = await getMenu({ search: searchText });
         if (result.success) {
-            setCategories(result.data);
+            // Handle both old format (array) and new format (object with banners + categories)
+            if (Array.isArray(result.data)) {
+                // Old format: just categories array
+                setCategories(result.data);
+                setBanners([]);
+            } else {
+                // New format: object with banners and categories
+                setCategories(result.data.categories || []);
+                setBanners(result.data.banners || []);
+            }
         }
         setLoading(false);
     };
@@ -48,6 +65,74 @@ const MenuScreen = ({ navigation }) => {
     useEffect(() => {
         fetchMenu();
     }, []);
+
+    // Auto-scroll animation for category filter (exactly like website)
+    useEffect(() => {
+        if (categories.length > 0) {
+            // Calculate total width of ONE set of categories (not duplicated)
+            const categoryWidth = 120; // Each category item width
+            const gap = 16; // Gap between items
+            const totalWidth = (categories.length + 1) * (categoryWidth + gap); // +1 for "All"
+            
+            // Create looping animation
+            animationRef.current = Animated.loop(
+                Animated.timing(scrollX, {
+                    toValue: -totalWidth, // Scroll exactly one set width (50%)
+                    duration: 30000, // 30 seconds like website
+                    useNativeDriver: true,
+                    easing: (t) => t, // Linear like website
+                })
+            );
+            
+            // Start animation
+            isPaused.current = false;
+            animationRef.current.start();
+
+            return () => {
+                if (animationRef.current) {
+                    animationRef.current.stop();
+                }
+            };
+        }
+    }, [categories]);
+
+    // Pause animation - can be called multiple times
+    const pauseAnimation = () => {
+        if (animationRef.current && !isPaused.current) {
+            animationRef.current.stop();
+            isPaused.current = true;
+        }
+    };
+
+    // Resume animation - recreates and restarts, works multiple times
+    const resumeAnimation = () => {
+        if (categories.length > 0 && isPaused.current) {
+            const categoryWidth = 120;
+            const gap = 16;
+            const totalWidth = (categories.length + 1) * (categoryWidth + gap);
+            
+            // Get current scroll position
+            const currentValue = scrollX._value;
+            
+            // Reset to start position when reaching end (for seamless loop)
+            if (currentValue <= -totalWidth) {
+                scrollX.setValue(0);
+            }
+            
+            // Recreate the animation from current position
+            animationRef.current = Animated.loop(
+                Animated.timing(scrollX, {
+                    toValue: -totalWidth,
+                    duration: 30000,
+                    useNativeDriver: true,
+                    easing: (t) => t,
+                })
+            );
+            
+            isPaused.current = false;
+            animationRef.current.start();
+        }
+    };
 
     const handleAddToCart = async (foodId) => {
         const result = await addToCart(foodId);
@@ -126,14 +211,99 @@ const MenuScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.categoryFilterContainer}>
-                <FlatList
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={[{ id: null, name: 'All', image_url: 'https://img.icons8.com/color/96/000000/restaurant.png' }, ...categories]}
-                    renderItem={renderCategoryFilterItem}
-                    keyExtractor={item => item.id ? item.id.toString() : 'all'}
-                    contentContainerStyle={styles.categoryFilterList}
-                />
+                <Animated.View
+                    style={[
+                        styles.categoryScrollWrapper,
+                        { transform: [{ translateX: scrollX }] }
+                    ]}
+                    onStartShouldSetResponder={() => true}
+                    onResponderGrant={pauseAnimation}
+                    onResponderRelease={resumeAnimation}
+                >
+                    {/* First set - "All" + categories */}
+                    <TouchableOpacity
+                        style={styles.categoryFilterItem}
+                        onPress={() => handleCategorySelect(null)}
+                    >
+                        <View style={[
+                            styles.categoryImageContainer,
+                            selectedCategory === null && styles.selectedCategoryContainer
+                        ]}>
+                            <Image
+                                source={{ uri: 'https://img.icons8.com/color/96/000000/restaurant.png' }}
+                                style={styles.categoryFilterImage}
+                            />
+                        </View>
+                        <Text style={[
+                            styles.categoryFilterName,
+                            selectedCategory === null && styles.selectedCategoryText
+                        ]} numberOfLines={1}>All</Text>
+                    </TouchableOpacity>
+
+                    {categories.map((item) => (
+                        <TouchableOpacity
+                            key={`first-${item.id}`}
+                            style={styles.categoryFilterItem}
+                            onPress={() => handleCategorySelect(item.id)}
+                        >
+                            <View style={[
+                                styles.categoryImageContainer,
+                                selectedCategory === item.id && styles.selectedCategoryContainer
+                            ]}>
+                                <Image
+                                    source={{ uri: item.image_url || 'https://via.placeholder.com/100' }}
+                                    style={styles.categoryFilterImage}
+                                />
+                            </View>
+                            <Text style={[
+                                styles.categoryFilterName,
+                                selectedCategory === item.id && styles.selectedCategoryText
+                            ]} numberOfLines={1}>{item.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+
+                    {/* Duplicate set - "All" + categories (for infinite loop) */}
+                    <TouchableOpacity
+                        style={styles.categoryFilterItem}
+                        onPress={() => handleCategorySelect(null)}
+                    >
+                        <View style={[
+                            styles.categoryImageContainer,
+                            selectedCategory === null && styles.selectedCategoryContainer
+                        ]}>
+                            <Image
+                                source={{ uri: 'https://img.icons8.com/color/96/000000/restaurant.png' }}
+                                style={styles.categoryFilterImage}
+                            />
+                        </View>
+                        <Text style={[
+                            styles.categoryFilterName,
+                            selectedCategory === null && styles.selectedCategoryText
+                        ]} numberOfLines={1}>All</Text>
+                    </TouchableOpacity>
+
+                    {categories.map((item) => (
+                        <TouchableOpacity
+                            key={`second-${item.id}`}
+                            style={styles.categoryFilterItem}
+                            onPress={() => handleCategorySelect(item.id)}
+                        >
+                            <View style={[
+                                styles.categoryImageContainer,
+                                selectedCategory === item.id && styles.selectedCategoryContainer
+                            ]}>
+                                <Image
+                                    source={{ uri: item.image_url || 'https://via.placeholder.com/100' }}
+                                    style={styles.categoryFilterImage}
+                                />
+                            </View>
+                            <Text style={[
+                                styles.categoryFilterName,
+                                selectedCategory === item.id && styles.selectedCategoryText
+                            ]} numberOfLines={1}>{item.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </Animated.View>
             </View>
 
             <FlatList
@@ -143,6 +313,31 @@ const MenuScreen = ({ navigation }) => {
                 contentContainerStyle={styles.listContent}
                 refreshing={loading}
                 onRefresh={fetchMenu}
+                ListHeaderComponent={
+                    banners.length > 0 ? (
+                        <View style={styles.bannersSection}>
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                decelerationRate="fast"
+                                snapToInterval={BANNER_WIDTH + 16}
+                                snapToAlignment="start"
+                                contentContainerStyle={styles.bannerScrollContent}
+                            >
+                                {banners.map((banner, index) => (
+                                    <View key={banner.id} style={styles.bannerContainer}>
+                                        <Image
+                                            source={{ uri: banner.image_url }}
+                                            style={styles.bannerImage}
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    ) : null
+                }
             />
         </SafeAreaView>
     );
@@ -175,20 +370,23 @@ const styles = StyleSheet.create({
     },
     categoryFilterContainer: {
         backgroundColor: Colors.white,
-        paddingBottom: 16,
+        paddingVertical: 16,
+        overflow: 'hidden',
+        height: 120,
     },
-    categoryFilterList: {
+    categoryScrollWrapper: {
+        flexDirection: 'row',
         paddingHorizontal: 16,
     },
     categoryFilterItem: {
         alignItems: 'center',
         marginRight: 16,
-        width: 75,
+        width: 100,
     },
     categoryImageContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         padding: 2,
         borderWidth: 2,
         borderColor: 'transparent',
@@ -317,6 +515,30 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontWeight: 'bold',
         fontSize: 12,
+    },
+    // Banner Styles
+    bannersSection: {
+        marginBottom: 16,
+    },
+    bannerScrollContent: {
+        paddingHorizontal: 16,
+    },
+    bannerContainer: {
+        width: BANNER_WIDTH,
+        height: 180,
+        marginRight: 16,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#f5f5f5',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    bannerImage: {
+        width: '100%',
+        height: '100%',
     },
 });
 

@@ -48,7 +48,10 @@ class MenuController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $categories
+            'data' => [
+                'banners' => $banners,      // Festival banners for carousel
+                'categories' => $categories  // Food categories with items
+            ]
         ]);
     }
 }
