@@ -23,6 +23,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 // Screens
 import LoginScreen from './src/screens/Auth/LoginScreen';
+import SignUpScreen from './src/screens/Auth/SignUpScreen';
 import MenuScreen from './src/screens/User/MenuScreen';
 import CartScreen from './src/screens/User/CartScreen';
 import CartConfirmationScreen from './src/screens/User/CartConfirmationScreen';
@@ -131,6 +132,7 @@ const AppNavigator = () => {
                 // Unauthenticated routes
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="SignUp" component={SignUpScreen} />
                 </>
             )}
         </Stack.Navigator>

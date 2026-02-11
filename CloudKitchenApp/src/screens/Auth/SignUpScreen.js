@@ -1,20 +1,17 @@
 /**
  * ============================================================================
- * LoginScreen - Premium Food Delivery Login Experience
+ * SignUpScreen - Professional Registration Experience
  * ============================================================================
  * 
- * A beautifully designed login screen for the Cloud Kitchen mobile app.
+ * A beautifully designed registration screen matching the website design.
  * Features:
- * - Modern, clean, professional UI
- * - Food delivery app aesthetic (warm colors, appetizing design)
- * - Smooth animations and transitions
- * - Loading states during API calls
- * - Comprehensive error handling
+ * - Clean, professional UI matching website aesthetics
  * - Form validation with real-time feedback
- * - Password visibility toggle
- * - Keyboard-aware scroll view
- * - Safe area handling
- * - Responsive design
+ * - Password strength indicator
+ * - Password visibility toggles
+ * - Smooth animations
+ * - Loading states
+ * - Keyboard-aware layout
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -35,49 +32,46 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import { useAuth } from '../../context/AuthContext';
-import { validateLoginForm } from '../../utils/validation';
 import Colors from '../../styles/colors';
 import { APP_CONFIG } from '../../utils/constants';
 
 const { width, height } = Dimensions.get('window');
 
 /**
- * LoginScreen component
+ * SignUpScreen component
  * 
  * @param {Object} props
  * @param {Object} props.navigation - React Navigation object
  */
-const LoginScreen = ({ navigation }) => {
+const SignUpScreen = ({ navigation }) => {
     // ==========================================================================
     // State
     // ==========================================================================
 
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [generalError, setGeneralError] = useState('');
 
     // Auth context
-    const { login, isLoading } = useAuth();
+    const { register, isLoading } = useAuth();
 
     // Refs for input focus management
+    const emailRef = useRef(null);
     const passwordRef = useRef(null);
+    const confirmPasswordRef = useRef(null);
 
     // ==========================================================================
     // Animations
     // ==========================================================================
 
-    // Fade in animation for the screen
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
 
-    // Logo bounce animation
-    const logoScale = useRef(new Animated.Value(0.8)).current;
-    const logoRotate = useRef(new Animated.Value(0)).current;
-
     useEffect(() => {
-        // Start entrance animations
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -89,46 +83,61 @@ const LoginScreen = ({ navigation }) => {
                 duration: 600,
                 useNativeDriver: true,
             }),
-            Animated.spring(logoScale, {
-                toValue: 1,
-                friction: 4,
-                tension: 40,
-                useNativeDriver: true,
-            }),
         ]).start();
-
-        // Subtle logo animation loop
-        const rotateAnimation = Animated.loop(
-            Animated.sequence([
-                Animated.timing(logoRotate, {
-                    toValue: 1,
-                    duration: 2000,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(logoRotate, {
-                    toValue: 0,
-                    duration: 2000,
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        rotateAnimation.start();
-
-        return () => rotateAnimation.stop();
     }, []);
 
-    const logoRotateInterpolate = logoRotate.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['-3deg', '3deg'],
-    });
+    // ==========================================================================
+    // Validation
+    // ==========================================================================
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Name validation
+        if (!name.trim()) {
+            newErrors.name = 'Full name is required';
+        } else if (name.trim().length < 2) {
+            newErrors.name = 'Name must be at least 2 characters';
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim()) {
+            newErrors.email = 'Email address is required';
+        } else if (!emailRegex.test(email.trim())) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        // Password validation
+        if (!password) {
+            newErrors.password = 'Password is required';
+        } else if (password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        }
+
+        // Confirm password validation
+        if (!confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password';
+        } else if (password !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     // ==========================================================================
     // Handlers
     // ==========================================================================
 
-    /**
-     * Clear field error when user starts typing
-     */
+    const handleNameChange = (value) => {
+        setName(value);
+        if (errors.name) {
+            setErrors((prev) => ({ ...prev, name: null }));
+        }
+        if (generalError) setGeneralError('');
+    };
+
     const handleEmailChange = (value) => {
         setEmail(value);
         if (errors.email) {
@@ -145,35 +154,55 @@ const LoginScreen = ({ navigation }) => {
         if (generalError) setGeneralError('');
     };
 
+    const handleConfirmPasswordChange = (value) => {
+        setConfirmPassword(value);
+        if (errors.confirmPassword) {
+            setErrors((prev) => ({ ...prev, confirmPassword: null }));
+        }
+        if (generalError) setGeneralError('');
+    };
+
     /**
      * Handle form submission
      */
-    const handleLogin = async () => {
+    const handleSignUp = async () => {
         // Clear previous errors
         setGeneralError('');
         setErrors({});
 
         // Validate form
-        const validation = validateLoginForm({ email, password });
-        if (!validation.isValid) {
-            setErrors(validation.errors);
+        if (!validateForm()) {
             return;
         }
 
-        // Submit login
+        // Submit registration
         setIsSubmitting(true);
         try {
-            const result = await login(email, password);
+            const result = await register({
+                name: name.trim(),
+                email: email.trim(),
+                password: password,
+                password_confirmation: confirmPassword,
+            });
 
             if (result.success) {
-                // Login successful - navigation will be handled by App.js
-                // based on auth state change
+                // Registration successful - user is automatically logged in by AuthContext
+                // App.js will handle navigation to main app based on auth state
+                Alert.alert(
+                    'Welcome! 🎉',
+                    'Your account has been created successfully. Let\'s start ordering!',
+                    [
+                        {
+                            text: 'Get Started',
+                        },
+                    ]
+                );
             } else {
                 // Handle API errors
                 if (result.errors && Object.keys(result.errors).length > 0) {
                     setErrors(result.errors);
                 } else {
-                    setGeneralError(result.error || 'Login failed. Please try again.');
+                    setGeneralError(result.error || 'Registration failed. Please try again.');
                 }
             }
         } catch (error) {
@@ -184,22 +213,10 @@ const LoginScreen = ({ navigation }) => {
     };
 
     /**
-     * Navigate to registration screen
+     * Navigate to login screen
      */
-    const handleSignUp = () => {
-        navigation.navigate('SignUp');
-    };
-
-    /**
-     * Handle forgot password
-     */
-    const handleForgotPassword = () => {
-        // navigation.navigate('ForgotPassword');
-        Alert.alert(
-            'Forgot Password',
-            'Password reset will be available in the next update!',
-            [{ text: 'OK' }]
-        );
+    const handleLogin = () => {
+        navigation.navigate('Login');
     };
 
     // ==========================================================================
@@ -229,26 +246,15 @@ const LoginScreen = ({ navigation }) => {
                         ]}
                     >
                         {/* ============================================================ */}
-                        {/* Header Section - Logo & Tagline */}
+                        {/* Header Section */}
                         {/* ============================================================ */}
 
                         <View style={styles.headerSection}>
-                            <Animated.View
-                                style={[
-                                    styles.logoContainer,
-                                    {
-                                        transform: [
-                                            { scale: logoScale },
-                                            { rotate: logoRotateInterpolate },
-                                        ],
-                                    },
-                                ]}
-                            >
+                            <View style={styles.logoContainer}>
                                 <View style={styles.logo}>
-                                    <Text style={styles.logoEmoji}>🍳</Text>
+                                    <Text style={styles.logoEmoji}>🍕</Text>
                                 </View>
-                                <View style={styles.logoAccent} />
-                            </Animated.View>
+                            </View>
 
                             <Text style={styles.appName}>{APP_CONFIG.APP_NAME}</Text>
                             <Text style={styles.tagline}>{APP_CONFIG.APP_TAGLINE}</Text>
@@ -259,9 +265,9 @@ const LoginScreen = ({ navigation }) => {
                         {/* ============================================================ */}
 
                         <View style={styles.welcomeSection}>
-                            <Text style={styles.welcomeTitle}>Welcome Back! 👋</Text>
+                            <Text style={styles.welcomeTitle}>Create Account</Text>
                             <Text style={styles.welcomeSubtitle}>
-                                Sign in to continue ordering your favorite meals
+                                Join us & start ordering today
                             </Text>
                         </View>
 
@@ -278,9 +284,24 @@ const LoginScreen = ({ navigation }) => {
                                 </Animated.View>
                             ) : null}
 
+                            {/* Name Input */}
+                            <CustomInput
+                                placeholder="Full Name"
+                                value={name}
+                                onChangeText={handleNameChange}
+                                error={errors.name}
+                                icon="👤"
+                                autoCapitalize="words"
+                                autoCorrect={false}
+                                returnKeyType="next"
+                                onSubmitEditing={() => emailRef.current?.focus()}
+                                editable={!isSubmitting}
+                            />
+
                             {/* Email Input */}
                             <CustomInput
-                                placeholder="Email address"
+                                ref={emailRef}
+                                placeholder="Email Address"
                                 value={email}
                                 onChangeText={handleEmailChange}
                                 error={errors.email}
@@ -302,24 +323,30 @@ const LoginScreen = ({ navigation }) => {
                                 error={errors.password}
                                 icon="🔒"
                                 secureTextEntry
-                                returnKeyType="done"
-                                onSubmitEditing={handleLogin}
+                                returnKeyType="next"
+                                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                                 editable={!isSubmitting}
                             />
 
-                            {/* Forgot Password Link */}
-                            <TouchableOpacity
-                                style={styles.forgotPasswordContainer}
-                                onPress={handleForgotPassword}
-                            >
-                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                            </TouchableOpacity>
+                            {/* Confirm Password Input */}
+                            <CustomInput
+                                ref={confirmPasswordRef}
+                                placeholder="Confirm Password"
+                                value={confirmPassword}
+                                onChangeText={handleConfirmPasswordChange}
+                                error={errors.confirmPassword}
+                                icon="🛡️"
+                                secureTextEntry
+                                returnKeyType="done"
+                                onSubmitEditing={handleSignUp}
+                                editable={!isSubmitting}
+                            />
 
-                            {/* Login Button */}
+                            {/* Sign Up Button */}
                             <View style={styles.buttonContainer}>
                                 <CustomButton
-                                    title="Sign In"
-                                    onPress={handleLogin}
+                                    title="Create Account"
+                                    onPress={handleSignUp}
                                     loading={isSubmitting || isLoading}
                                     disabled={isSubmitting || isLoading}
                                     icon="🚀"
@@ -328,13 +355,13 @@ const LoginScreen = ({ navigation }) => {
                         </View>
 
                         {/* ============================================================ */}
-                        {/* Sign Up Link */}
+                        {/* Login Link */}
                         {/* ============================================================ */}
 
-                        <View style={styles.signUpContainer}>
-                            <Text style={styles.signUpText}>Don't have an account? </Text>
-                            <TouchableOpacity onPress={handleSignUp}>
-                                <Text style={styles.signUpLink}>Sign Up</Text>
+                        <View style={styles.loginContainer}>
+                            <Text style={styles.loginText}>Already have an account? </Text>
+                            <TouchableOpacity onPress={handleLogin}>
+                                <Text style={styles.loginLink}>Login</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -388,7 +415,6 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     logoContainer: {
-        position: 'relative',
         marginBottom: 16,
     },
     logo: {
@@ -400,15 +426,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 3,
         borderColor: Colors.primary,
-    },
-    logoAccent: {
-        position: 'absolute',
-        bottom: -5,
-        right: -5,
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: Colors.SEMANTIC.success,
     },
     logoEmoji: {
         fontSize: 48,
@@ -469,85 +486,24 @@ const styles = StyleSheet.create({
         color: Colors.error,
         fontWeight: '500',
     },
-    forgotPasswordContainer: {
-        alignSelf: 'flex-end',
-        marginTop: -8,
-        marginBottom: 24,
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        color: Colors.primary,
-        fontWeight: '600',
-    },
     buttonContainer: {
         marginTop: 8,
     },
 
     // =========================================================================
-    // Divider
+    // Login Link
     // =========================================================================
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 24,
-    },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: Colors.BORDER.light,
-    },
-    dividerText: {
-        marginHorizontal: 16,
-        fontSize: 13,
-        color: Colors.TEXT.muted,
-        fontWeight: '500',
-    },
-
-    // =========================================================================
-    // Social Login
-    // =========================================================================
-    socialContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 16,
-        marginBottom: 32,
-    },
-    socialButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: Colors.BACKGROUND.secondary,
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        borderWidth: 1,
-        borderColor: Colors.BORDER.light,
-        minWidth: width * 0.38,
-    },
-    socialIcon: {
-        fontSize: 20,
-        marginRight: 8,
-    },
-    socialText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: Colors.TEXT.primary,
-    },
-
-    // =========================================================================
-    // Sign Up
-    // =========================================================================
-    signUpContainer: {
+    loginContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 24,
     },
-    signUpText: {
+    loginText: {
         fontSize: 15,
         color: Colors.TEXT.secondary,
     },
-    signUpLink: {
+    loginLink: {
         fontSize: 15,
         color: Colors.primary,
         fontWeight: '700',
@@ -572,4 +528,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoginScreen;
+export default SignUpScreen;
