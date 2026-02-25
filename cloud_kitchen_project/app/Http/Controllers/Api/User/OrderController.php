@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\User;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Cart;
-use App\Models\UserAddress;  // Fixed: Changed from Address to UserAddress
+use App\Models\UserAddress;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,22 +25,23 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * Place order — matches web CheckoutController logic exactly.
+     * Server calculates total from cart items. No GST/fees (same as web).
+     */
     public function placeOrder(Request $request)
     {
         $request->validate([
             'address_id' => 'required|exists:user_addresses,id',
             'payment_method' => 'required|in:cod,online',
-            'subtotal' => 'required|numeric|min:0',
-            'gst_amount' => 'required|numeric|min:0',
-            'delivery_charge' => 'required|numeric|min:0',
-            'payment_processing_fee' => 'required|numeric|min:0',
-            'total_amount' => 'required|numeric|min:0',
         ]);
 
+        // Verify address belongs to authenticated user
         $address = UserAddress::where('id', $request->address_id)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        // Get cart items with food item details
         $cartItems = Cart::where('user_id', auth()->id())->with('foodItem')->get();
 
         if ($cartItems->isEmpty()) {
@@ -50,68 +51,43 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // Calculate and verify subtotal from cart items
-        $calculatedSubtotal = $cartItems->sum(function($item) {
-            return $item->foodItem->price * $item->quantity;
-        });
-
-        // Verify client calculations match server calculations (security check)
-        if (abs($calculatedSubtotal - $request->subtotal) > 0.01) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Subtotal mismatch. Please refresh and try again.'
-            ], 400);
-        }
-
-        // Verify GST calculation (18%)
-        $calculatedGst = round($calculatedSubtotal * 0.18, 2);
-        if (abs($calculatedGst - $request->gst_amount) > 0.01) {
-            return response()->json([
-                'success' => false,
-                'message' => 'GST calculation mismatch. Please refresh and try again.'
-            ], 400);
-        }
-
-        // Verify total calculation
-        $calculatedTotal = $calculatedSubtotal + $request->gst_amount + $request->delivery_charge + $request->payment_processing_fee;
-        if (abs($calculatedTotal - $request->total_amount) > 0.01) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Total amount mismatch. Please refresh and try again.'
-            ], 400);
+        // Calculate total from cart (server-side, same as web)
+        $total = 0;
+        foreach ($cartItems as $item) {
+            $total += $item->foodItem->price * $item->quantity;
         }
 
         try {
             DB::beginTransaction();
 
+            // Create order — matches web CheckoutController exactly
             $order = Order::create([
                 'user_id' => auth()->id(),
                 'address_id' => $address->id,
-                'subtotal' => $request->subtotal,
-                'gst_amount' => $request->gst_amount,
-                'delivery_charge' => $request->delivery_charge,
-                'payment_processing_fee' => $request->payment_processing_fee,
-                'total_amount' => $request->total_amount,
+                'total_amount' => $total,
                 'payment_method' => $request->payment_method,
-                'payment_status' => 'pending',
+                'payment_status' => $request->payment_method === 'cod' ? 'unpaid' : 'pending',
                 'status' => 'pending',
-                'order_date' => now()
             ]);
 
+            // Create order items
             foreach ($cartItems as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'food_item_id' => $item->food_item_id,
                     'food_name' => $item->foodItem->name,
                     'quantity' => $item->quantity,
-                    'price' => $item->foodItem->price
+                    'price' => $item->foodItem->price,
                 ]);
             }
 
-            // Clear Cart
+            // Clear cart
             Cart::where('user_id', auth()->id())->delete();
 
             DB::commit();
+
+            // Load relationships for response
+            $order->load(['items', 'address']);
 
             return response()->json([
                 'success' => true,

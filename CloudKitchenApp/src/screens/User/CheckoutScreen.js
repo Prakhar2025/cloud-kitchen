@@ -1,6 +1,28 @@
+/**
+ * ============================================================================
+ * Checkout Screen - Matches Web Checkout Flow Exactly
+ * ============================================================================
+ *
+ * Web flow: Cart → Select Address → Payment Method (COD only) → Summary → Place Order
+ * Mobile: Single screen with all steps, matching web's logic exactly.
+ *
+ * What this sends to API: { address_id, payment_method }
+ * Server calculates total from cart items (same as web).
+ */
+
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import {
+    StyleSheet,
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../styles/colors';
 import { placeOrder } from '../../api/order';
 import { getAddresses } from '../../api/user';
@@ -12,18 +34,10 @@ const CheckoutScreen = ({ navigation, route }) => {
     const [placingOrder, setPlacingOrder] = useState(false);
     const [addresses, setAddresses] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState(null);
-    const [deliveryCharge, setDeliveryCharge] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('cod'); // Default COD like web
 
-    // Constants
-    const GST_RATE = 0.18; // 18%
-    const COD_FEE = 100;
-    const ONLINE_FEE = 50;
-
-    // Calculations
-    const gstAmount = subtotal * GST_RATE;
-    const paymentProcessingFee = paymentMethod === 'cod' ? COD_FEE : paymentMethod === 'online' ? ONLINE_FEE : 0;
-    const totalAmount = subtotal + gstAmount + deliveryCharge + paymentProcessingFee;
+    // Total is just the subtotal (sum of item prices × qty) — same as web
+    const totalAmount = subtotal;
 
     useEffect(() => {
         fetchAddresses();
@@ -34,60 +48,49 @@ const CheckoutScreen = ({ navigation, route }) => {
         const result = await getAddresses();
         if (result.success && result.data.length > 0) {
             setAddresses(result.data);
-            setSelectedAddress(result.data[0].id);
+            setSelectedAddress(result.data[0]);
         }
         setLoading(false);
     };
 
     const handlePlaceOrder = async () => {
         if (!selectedAddress) {
-            Alert.alert("No Address", "Please add an address in your profile to continue.", [
-                { text: "Go to Profile", onPress: () => navigation.navigate('Profile') }
-            ]);
-            return;
-        }
-
-        if (!paymentMethod) {
-            Alert.alert("Payment Method Required", "Please select a payment method to continue.");
+            Alert.alert(
+                'No Address',
+                'Please add an address in your profile to continue.',
+                [{ text: 'Go to Profile', onPress: () => navigation.navigate('Profile') }]
+            );
             return;
         }
 
         Alert.alert(
-            "Confirm Order",
+            'Confirm Order',
             `Place order for ₹${totalAmount.toFixed(2)}?`,
             [
-                { text: "Cancel", style: "cancel" },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: "Confirm",
+                    text: 'Place Order',
                     onPress: async () => {
                         setPlacingOrder(true);
+
+                        // Send only address_id and payment_method
+                        // Server calculates total from cart (same as web)
                         const result = await placeOrder({
-                            address_id: selectedAddress,
+                            address_id: selectedAddress.id,
                             payment_method: paymentMethod,
-                            subtotal: parseFloat(subtotal.toFixed(2)),
-                            gst_amount: parseFloat(gstAmount.toFixed(2)),
-                            delivery_charge: parseFloat(deliveryCharge.toFixed(2)),
-                            payment_processing_fee: parseFloat(paymentProcessingFee.toFixed(2)),
-                            total_amount: parseFloat(totalAmount.toFixed(2))
                         });
+
                         setPlacingOrder(false);
 
                         if (result.success) {
-                            Alert.alert("Success", "Order placed successfully!", [
-                                {
-                                    text: "OK", onPress: () => {
-                                        navigation.reset({
-                                            index: 0,
-                                            routes: [{ name: 'Main', params: { screen: 'Orders' } }],
-                                        });
-                                    }
-                                }
-                            ]);
+                            navigation.replace('OrderSuccess', {
+                                orderId: result.data?.id || 'N/A',
+                            });
                         } else {
-                            Alert.alert("Error", result.error || "Failed to place order");
+                            Alert.alert('Error', result.error || 'Failed to place order');
                         }
-                    }
-                }
+                    },
+                },
             ]
         );
     };
@@ -96,158 +99,204 @@ const CheckoutScreen = ({ navigation, route }) => {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={styles.loadingText}>Loading checkout...</Text>
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>← Back</Text>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="arrow-back" size={24} color={Colors.TEXT.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Checkout</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView style={styles.content}>
-                {/* Order Summary */}
+            <ScrollView
+                style={styles.content}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* ============================================================ */}
+                {/* Step 1: Delivery Address (matches web's address selection)    */}
+                {/* ============================================================ */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Order Summary</Text>
-                    {cartItems.map((item, index) => (
-                        <View key={index} style={styles.orderItem}>
-                            <Text style={styles.orderItemName}>
-                                {item.food_item?.name} × {item.quantity}
+                    <View style={styles.sectionHeaderRow}>
+                        <Ionicons name="location-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>Select Delivery Address</Text>
+                    </View>
+
+                    {addresses.length === 0 ? (
+                        <View style={styles.warningBox}>
+                            <Text style={styles.warningText}>
+                                ⚠️ No addresses found. Please add one in your profile.
                             </Text>
-                            <Text style={styles.orderItemPrice}>
-                                ₹{(item.food_item?.price * item.quantity).toFixed(2)}
-                            </Text>
+                            <TouchableOpacity
+                                style={styles.addAddressButton}
+                                onPress={() => navigation.navigate('Profile')}
+                            >
+                                <Text style={styles.addAddressText}>Go to Profile →</Text>
+                            </TouchableOpacity>
                         </View>
-                    ))}
+                    ) : (
+                        addresses.map((addr) => (
+                            <TouchableOpacity
+                                key={addr.id}
+                                style={[
+                                    styles.addressCard,
+                                    selectedAddress?.id === addr.id && styles.addressCardSelected,
+                                ]}
+                                onPress={() => setSelectedAddress(addr)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.radioOuter}>
+                                    {selectedAddress?.id === addr.id && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <View style={styles.addressInfo}>
+                                    <Text style={styles.addressLabel}>
+                                        {addr.label || 'Address'}
+                                    </Text>
+                                    <Text style={styles.addressName}>{addr.name}</Text>
+                                    <Text style={styles.addressPhone}>{addr.phone}</Text>
+                                    <Text style={styles.addressText}>
+                                        {[addr.address_line1, addr.city, addr.state, addr.zip_code]
+                                            .filter(Boolean)
+                                            .join(', ')}
+                                    </Text>
+                                </View>
+                                {selectedAddress?.id === addr.id && (
+                                    <View style={styles.deliverBadge}>
+                                        <Text style={styles.deliverBadgeText}>Deliver Here</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        ))
+                    )}
                 </View>
 
-                {/* Invoice Section */}
+                {/* ============================================================ */}
+                {/* Step 2: Payment Method (matches web — COD only)              */}
+                {/* ============================================================ */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Invoice</Text>
-
-                    <View style={styles.invoiceRow}>
-                        <Text style={styles.invoiceLabel}>Subtotal</Text>
-                        <Text style={styles.invoiceValue}>₹{subtotal.toFixed(2)}</Text>
+                    <View style={styles.sectionHeaderRow}>
+                        <Ionicons name="card-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>Payment Method</Text>
                     </View>
 
-                    <View style={styles.invoiceRow}>
-                        <Text style={styles.invoiceLabel}>GST (18%)</Text>
-                        <Text style={styles.invoiceValue}>₹{gstAmount.toFixed(2)}</Text>
-                    </View>
-
-                    <View style={styles.invoiceRow}>
-                        <Text style={styles.invoiceLabel}>Delivery Charge</Text>
-                        <Text style={styles.invoiceValue}>₹{deliveryCharge.toFixed(2)}</Text>
-                    </View>
-
-                    {paymentMethod && (
-                        <View style={styles.invoiceRow}>
-                            <Text style={styles.invoiceLabel}>
-                                Payment Processing Fee ({paymentMethod === 'cod' ? 'COD' : 'Online'})
+                    {/* Deliver To summary — same as web */}
+                    {selectedAddress && (
+                        <View style={styles.deliverToBox}>
+                            <Text style={styles.deliverToTitle}>Deliver To</Text>
+                            <Text style={styles.deliverToName}>
+                                {selectedAddress.name} ({selectedAddress.phone})
                             </Text>
-                            <Text style={styles.invoiceValue}>₹{paymentProcessingFee.toFixed(2)}</Text>
+                            <Text style={styles.deliverToAddress}>
+                                {[selectedAddress.address_line1, selectedAddress.city, selectedAddress.state, selectedAddress.zip_code]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                            </Text>
                         </View>
                     )}
 
-                    <View style={[styles.invoiceRow, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
-                    </View>
-                </View>
-
-                {/* Delivery Charge Options */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Delivery Options</Text>
-
+                    {/* COD Option */}
                     <TouchableOpacity
-                        style={[styles.optionCard, deliveryCharge === 0 && styles.selectedOption]}
-                        onPress={() => setDeliveryCharge(0)}
-                    >
-                        <View style={styles.radioButton}>
-                            {deliveryCharge === 0 && <View style={styles.radioButtonInner} />}
-                        </View>
-                        <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>Standard Delivery</Text>
-                            <Text style={styles.optionSubtitle}>Free • 45-60 mins</Text>
-                        </View>
-                        <Text style={styles.optionPrice}>Free</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.optionCard, deliveryCharge === 50 && styles.selectedOption]}
-                        onPress={() => setDeliveryCharge(50)}
-                    >
-                        <View style={styles.radioButton}>
-                            {deliveryCharge === 50 && <View style={styles.radioButtonInner} />}
-                        </View>
-                        <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>Express Delivery</Text>
-                            <Text style={styles.optionSubtitle}>₹50 • 20-30 mins</Text>
-                        </View>
-                        <Text style={styles.optionPrice}>₹50</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Payment Method */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Payment Method</Text>
-
-                    <TouchableOpacity
-                        style={[styles.optionCard, paymentMethod === 'cod' && styles.selectedOption]}
+                        style={[styles.paymentOption, paymentMethod === 'cod' && styles.paymentOptionSelected]}
                         onPress={() => setPaymentMethod('cod')}
+                        activeOpacity={0.7}
                     >
-                        <View style={styles.radioButton}>
-                            {paymentMethod === 'cod' && <View style={styles.radioButtonInner} />}
+                        <View style={styles.radioOuter}>
+                            {paymentMethod === 'cod' && <View style={styles.radioInner} />}
                         </View>
-                        <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>Cash on Delivery</Text>
-                            <Text style={styles.optionSubtitle}>Pay when you receive</Text>
-                        </View>
-                        <Text style={styles.optionFee}>+₹100</Text>
+                        <Text style={styles.paymentOptionText}>Cash on Delivery</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.optionCard, paymentMethod === 'online' && styles.selectedOption]}
-                        onPress={() => setPaymentMethod('online')}
-                    >
-                        <View style={styles.radioButton}>
-                            {paymentMethod === 'online' && <View style={styles.radioButtonInner} />}
-                        </View>
-                        <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>Online Payment</Text>
-                            <Text style={styles.optionSubtitle}>UPI, Card, Net Banking</Text>
-                        </View>
-                        <Text style={styles.optionFee}>+₹50</Text>
-                    </TouchableOpacity>
+                    {/* Online — disabled, same as web */}
+                    <View style={[styles.paymentOption, styles.paymentOptionDisabled]}>
+                        <View style={[styles.radioOuter, { borderColor: '#D1D5DB' }]} />
+                        <Text style={[styles.paymentOptionText, { color: '#9CA3AF' }]}>
+                            Online Payment (Coming Soon)
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoText}>
+                            💡 Online payment will be enabled in the next version.
+                        </Text>
+                    </View>
                 </View>
 
-                {!selectedAddress && (
-                    <View style={styles.warningBox}>
-                        <Text style={styles.warningText}>⚠️ Please add an address in your profile first!</Text>
+                {/* ============================================================ */}
+                {/* Step 3: Order Summary (matches web's summary page)           */}
+                {/* ============================================================ */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeaderRow}>
+                        <Ionicons name="receipt-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>Order Summary</Text>
                     </View>
-                )}
 
-                {!paymentMethod && (
-                    <View style={styles.infoBox}>
-                        <Text style={styles.infoText}>💡 Select a payment method to proceed</Text>
+                    {/* Delivery Details */}
+                    {selectedAddress && (
+                        <View style={styles.summaryBlock}>
+                            <Text style={styles.summaryBlockTitle}>Delivery Details</Text>
+                            <Text style={styles.summaryText}>{selectedAddress.name}</Text>
+                            <Text style={styles.summaryText}>{selectedAddress.phone}</Text>
+                            <Text style={styles.summaryText}>
+                                {[selectedAddress.address_line1, selectedAddress.city, selectedAddress.state, selectedAddress.zip_code]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Payment Method */}
+                    <View style={styles.summaryBlock}>
+                        <Text style={styles.summaryBlockTitle}>Payment Method</Text>
+                        <Text style={styles.summaryText}>
+                            {paymentMethod === 'cod' ? 'COD' : 'Online'}
+                        </Text>
                     </View>
-                )}
+
+                    {/* Order Items */}
+                    <View style={styles.summaryBlock}>
+                        <Text style={styles.summaryBlockTitle}>Order Items</Text>
+                        {cartItems.map((item, index) => (
+                            <Text key={index} style={styles.summaryItemText}>
+                                • {item.food_item?.name} × {item.quantity} — ₹{(item.food_item?.price * item.quantity).toFixed(0)}
+                            </Text>
+                        ))}
+                    </View>
+
+                    {/* Total — simple total, same as web */}
+                    <View style={styles.totalBlock}>
+                        <Text style={styles.totalLabel}>Total Amount</Text>
+                        <Text style={styles.totalValue}>₹{totalAmount.toFixed(0)}</Text>
+                    </View>
+                </View>
+
+                <View style={{ height: 100 }} />
             </ScrollView>
 
-            {paymentMethod && selectedAddress && (
+            {/* Bottom: Place Order Button */}
+            {selectedAddress && (
                 <View style={styles.footer}>
                     <View style={styles.footerTotal}>
-                        <Text style={styles.footerTotalLabel}>Total to Pay</Text>
-                        <Text style={styles.footerTotalValue}>₹{totalAmount.toFixed(2)}</Text>
+                        <Text style={styles.footerTotalLabel}>Total</Text>
+                        <Text style={styles.footerTotalValue}>₹{totalAmount.toFixed(0)}</Text>
                     </View>
                     <TouchableOpacity
                         style={[styles.placeOrderButton, placingOrder && { opacity: 0.7 }]}
                         onPress={handlePlaceOrder}
                         disabled={placingOrder}
+                        activeOpacity={0.8}
                     >
                         {placingOrder ? (
                             <ActivityIndicator color={Colors.white} />
@@ -261,201 +310,302 @@ const CheckoutScreen = ({ navigation, route }) => {
     );
 };
 
+// =============================================================================
+// Styles
+// =============================================================================
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.BACKGROUND?.secondary || '#f5f5f5',
+        backgroundColor: Colors.BACKGROUND.secondary,
     },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: Colors.BACKGROUND.secondary,
     },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: Colors.TEXT.secondary,
+    },
+
+    // Header
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: Colors.white,
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+            android: { elevation: 2 },
+        }),
     },
     backButton: {
-        marginBottom: 8,
-    },
-    backButtonText: {
-        fontSize: 16,
-        color: Colors.primary,
-        fontWeight: '600',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: Colors.BACKGROUND.secondary,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.TEXT?.primary || '#000',
+        fontSize: 18,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
     },
+
+    // Content
     content: {
         flex: 1,
     },
+    scrollContent: {
+        padding: 12,
+    },
+
+    // Sections
     section: {
         backgroundColor: Colors.white,
+        borderRadius: 12,
         padding: 16,
-        marginTop: 12,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.TEXT?.primary || '#000',
         marginBottom: 12,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+            android: { elevation: 2 },
+        }),
     },
-    orderItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    orderItemName: {
-        fontSize: 14,
-        color: Colors.TEXT?.secondary || '#666',
-        flex: 1,
-    },
-    orderItemPrice: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.TEXT?.primary || '#000',
-    },
-    invoiceRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    invoiceLabel: {
-        fontSize: 14,
-        color: Colors.TEXT?.secondary || '#666',
-    },
-    invoiceValue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.TEXT?.primary || '#000',
-    },
-    totalRow: {
-        marginTop: 8,
-        paddingTop: 16,
-        borderTopWidth: 2,
-        borderTopColor: Colors.primary,
-        borderBottomWidth: 0,
-    },
-    totalLabel: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.TEXT?.primary || '#000',
-    },
-    totalValue: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.primary,
-    },
-    optionCard: {
+    sectionHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#f9f9f9',
-        borderRadius: 12,
-        marginBottom: 12,
-        borderWidth: 2,
-        borderColor: 'transparent',
+        marginBottom: 14,
+        gap: 8,
     },
-    selectedOption: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.PRIMARY?.light + '10' || '#e3f2fd',
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
     },
-    radioButton: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+
+    // Radio buttons
+    radioOuter: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         borderWidth: 2,
         borderColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
-    radioButtonInner: {
+    radioInner: {
         width: 12,
         height: 12,
         borderRadius: 6,
         backgroundColor: Colors.primary,
     },
-    optionContent: {
+
+    // Address cards
+    addressCard: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        padding: 14,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
+        marginBottom: 10,
+        backgroundColor: Colors.white,
+    },
+    addressCardSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: '#FFF7F3',
+    },
+    addressInfo: {
         flex: 1,
     },
-    optionTitle: {
-        fontSize: 16,
+    addressLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: Colors.primary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
+    addressName: {
+        fontSize: 15,
         fontWeight: '600',
-        color: Colors.TEXT?.primary || '#000',
+        color: Colors.TEXT.primary,
+    },
+    addressPhone: {
+        fontSize: 13,
+        color: Colors.TEXT.secondary,
         marginBottom: 2,
     },
-    optionSubtitle: {
+    addressText: {
         fontSize: 13,
-        color: Colors.TEXT?.secondary || '#666',
+        color: Colors.TEXT.secondary,
+        lineHeight: 19,
     },
-    optionPrice: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#4caf50',
+    deliverBadge: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 12,
     },
-    optionFee: {
+    deliverBadgeText: {
+        color: Colors.white,
+        fontSize: 11,
+        fontWeight: '600',
+    },
+
+    // Payment options
+    paymentOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
+        marginBottom: 10,
+    },
+    paymentOptionSelected: {
+        borderColor: Colors.primary,
+        backgroundColor: '#FFF7F3',
+    },
+    paymentOptionDisabled: {
+        opacity: 0.5,
+    },
+    paymentOptionText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: Colors.TEXT.primary,
+    },
+
+    // Deliver To box
+    deliverToBox: {
+        backgroundColor: Colors.BACKGROUND.secondary,
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 14,
+        borderLeftWidth: 3,
+        borderLeftColor: Colors.primary,
+    },
+    deliverToTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
+        marginBottom: 4,
+    },
+    deliverToName: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#ff9800',
+        color: Colors.TEXT.primary,
     },
+    deliverToAddress: {
+        fontSize: 13,
+        color: Colors.TEXT.secondary,
+        lineHeight: 19,
+    },
+
+    // Info & Warning
     warningBox: {
-        backgroundColor: '#fff3cd',
-        padding: 12,
-        margin: 16,
+        backgroundColor: '#FFF3CD',
+        padding: 14,
         borderRadius: 8,
         borderLeftWidth: 4,
-        borderLeftColor: '#ff9800',
+        borderLeftColor: '#FF9800',
     },
     warningText: {
         fontSize: 14,
         color: '#856404',
     },
+    addAddressButton: {
+        marginTop: 10,
+    },
+    addAddressText: {
+        color: Colors.primary,
+        fontWeight: '600',
+        fontSize: 14,
+    },
     infoBox: {
-        backgroundColor: '#e3f2fd',
+        backgroundColor: '#E0F7FA',
         padding: 12,
-        margin: 16,
         borderRadius: 8,
-        borderLeftWidth: 4,
-        borderLeftColor: Colors.primary,
     },
     infoText: {
-        fontSize: 14,
-        color: '#1565c0',
+        fontSize: 13,
+        color: '#006064',
     },
+
+    // Summary
+    summaryBlock: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.BACKGROUND.secondary,
+    },
+    summaryBlockTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
+        marginBottom: 6,
+    },
+    summaryText: {
+        fontSize: 13,
+        color: Colors.TEXT.secondary,
+        lineHeight: 20,
+    },
+    summaryItemText: {
+        fontSize: 13,
+        color: Colors.TEXT.secondary,
+        lineHeight: 22,
+    },
+
+    // Total
+    totalBlock: {
+        paddingTop: 14,
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
+        marginBottom: 4,
+    },
+    totalValue: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: Colors.primary,
+    },
+
+    // Footer
     footer: {
         backgroundColor: Colors.white,
-        padding: 20,
+        padding: 16,
+        paddingBottom: 20,
         borderTopWidth: 1,
         borderTopColor: Colors.border,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 10,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 5 },
+            android: { elevation: 10 },
+        }),
     },
     footerTotal: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
     },
     footerTotalLabel: {
         fontSize: 16,
         fontWeight: '600',
-        color: Colors.TEXT?.secondary || '#666',
+        color: Colors.TEXT.secondary,
     },
     footerTotalValue: {
         fontSize: 24,
-        fontWeight: 'bold',
+        fontWeight: '800',
         color: Colors.primary,
     },
     placeOrderButton: {
@@ -466,8 +616,8 @@ const styles = StyleSheet.create({
     },
     placeOrderButtonText: {
         color: Colors.white,
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 17,
+        fontWeight: '700',
     },
 });
 

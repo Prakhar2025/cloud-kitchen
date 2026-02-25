@@ -32,6 +32,7 @@ import OrdersScreen from './src/screens/User/OrdersScreen';
 import ProfileScreen from './src/screens/User/ProfileScreen';
 import NotificationsScreen from './src/screens/User/NotificationsScreen';
 import InvoiceScreen from './src/screens/User/InvoiceScreen';
+import OrderSuccessScreen from './src/screens/User/OrderSuccessScreen';
 
 // Styles
 import Colors from './src/styles/colors';
@@ -137,8 +138,12 @@ const AppNavigator = () => {
                         component={InvoiceScreen}
                         options={{ headerShown: false }}
                     />
-                </>
-            ) : (
+                    <Stack.Screen
+                        name="OrderSuccess"
+                        component={OrderSuccessScreen}
+                        options={{ headerShown: false, gestureEnabled: false }}
+                    />
+                </>) : (
                 // Unauthenticated routes
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />

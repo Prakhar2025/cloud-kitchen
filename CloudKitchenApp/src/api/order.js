@@ -15,6 +15,12 @@ export const getOrders = async () => {
     }
 };
 
+/**
+ * Place an order - sends address_id and payment_method only.
+ * Server calculates total from cart items (same as web).
+ * @param {Object} orderData - {address_id: number, payment_method: 'cod'|'online'}
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, error?: string}>}
+ */
 export const placeOrder = async (orderData) => {
     try {
         const response = await apiClient.post('/user/orders/place', orderData);
