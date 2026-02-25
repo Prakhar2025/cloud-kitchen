@@ -4,11 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getOrders, cancelOrder, rateOrder } from '../../api/order';
+import TabBar from '../../components/TabBar';
+
+// Tab definitions for order status filter
+const ORDER_TABS = [
+    { key: 'all', label: 'All Orders' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'confirmed', label: 'Confirmed' },
+    { key: 'preparing', label: 'Preparing' },
+    { key: 'delivered', label: 'Delivered' },
+    { key: 'cancelled', label: 'Cancelled' },
+];
 
 const OrdersScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState('all');
     const [ratingModalVisible, setRatingModalVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [rating, setRating] = useState(0);
@@ -165,21 +177,35 @@ const OrdersScreen = ({ navigation }) => {
         );
     }
 
+    // Filter orders by active tab (client-side)
+    const filteredOrders = activeTab === 'all'
+        ? orders
+        : orders.filter(o => o.status === activeTab);
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>My Orders</Text>
             </View>
 
+            {/* WhatsApp-style horizontal tab bar */}
+            <TabBar
+                tabs={ORDER_TABS}
+                activeTab={activeTab}
+                onTabPress={setActiveTab}
+            />
+
             <FlatList
-                data={orders}
+                data={filteredOrders}
                 renderItem={renderOrderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 ListEmptyComponent={
                     <View style={styles.centered}>
-                        <Text style={styles.emptyText}>No orders found</Text>
+                        <Text style={styles.emptyText}>
+                            {activeTab === 'all' ? 'No orders yet' : `No ${activeTab} orders`}
+                        </Text>
                     </View>
                 }
             />
