@@ -31,6 +31,7 @@ import CheckoutScreen from './src/screens/User/CheckoutScreen';
 import OrdersScreen from './src/screens/User/OrdersScreen';
 import ProfileScreen from './src/screens/User/ProfileScreen';
 import NotificationsScreen from './src/screens/User/NotificationsScreen';
+import InvoiceScreen from './src/screens/User/InvoiceScreen';
 
 // Styles
 import Colors from './src/styles/colors';
@@ -129,6 +130,11 @@ const AppNavigator = () => {
                     <Stack.Screen
                         name="Checkout"
                         component={CheckoutScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Invoice"
+                        component={InvoiceScreen}
                         options={{ headerShown: false }}
                     />
                 </>

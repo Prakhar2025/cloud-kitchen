@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getOrders, cancelOrder, rateOrder } from '../../api/order';
 
-const OrdersScreen = () => {
+const OrdersScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -123,14 +123,20 @@ const OrdersScreen = () => {
             <View style={styles.orderFooter}>
                 <Text style={styles.totalAmount}>Total: ₹{item.total_amount}</Text>
                 <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Invoice', { order: item })}
+                        style={styles.invoiceButton}
+                    >
+                        <Text style={styles.invoiceButtonText}>📄 Invoice</Text>
+                    </TouchableOpacity>
                     {item.status === 'pending' && (
                         <TouchableOpacity onPress={() => handleCancel(item.id)} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     )}
                     {item.status === 'delivered' && (
-                        <TouchableOpacity 
-                            onPress={() => openRatingModal(item)} 
+                        <TouchableOpacity
+                            onPress={() => openRatingModal(item)}
                             style={styles.rateButton}
                         >
                             <Text style={styles.rateButtonText}>⭐ Rate Order</Text>
@@ -207,16 +213,16 @@ const OrdersScreen = () => {
                         />
 
                         <View style={styles.modalButtons}>
-                            <TouchableOpacity 
-                                onPress={closeRatingModal} 
+                            <TouchableOpacity
+                                onPress={closeRatingModal}
                                 style={[styles.modalButton, styles.cancelModalButton]}
                                 disabled={submittingRating}
                             >
                                 <Text style={styles.cancelModalButtonText}>Cancel</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
-                                onPress={handleSubmitRating} 
+                            <TouchableOpacity
+                                onPress={handleSubmitRating}
                                 style={[styles.modalButton, styles.submitButton]}
                                 disabled={submittingRating}
                             >
@@ -329,6 +335,18 @@ const styles = StyleSheet.create({
     },
     cancelButtonText: {
         color: 'red',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    invoiceButton: {
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    invoiceButtonText: {
+        color: Colors.primary,
         fontSize: 12,
         fontWeight: '600',
     },
