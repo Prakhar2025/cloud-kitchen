@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
 import { addToCart } from '../../api/cart';
@@ -20,7 +21,6 @@ const MenuScreen = ({ navigation }) => {
     const scrollX = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef(null);
     const animationRef = useRef(null);
-    const isPaused = useRef(false);
 
     const fetchMenu = async () => {
         setLoading(true);
@@ -44,10 +44,14 @@ const MenuScreen = ({ navigation }) => {
         setSelectedCategory(selectedCategory === categoryId ? null : categoryId);
     };
 
+    const handleCategoryNavigate = (categoryId, categoryName) => {
+        navigation.navigate('Category', { categoryId, categoryName });
+    };
+
     const renderCategoryFilterItem = ({ item }) => (
         <TouchableOpacity
             style={styles.categoryFilterItem}
-            onPress={() => handleCategorySelect(item.id)}
+            onPress={() => handleCategoryNavigate(item.id, item.name)}
         >
             <View style={[
                 styles.categoryImageContainer,
@@ -69,60 +73,22 @@ const MenuScreen = ({ navigation }) => {
         fetchMenu();
     }, []);
 
-    // Auto-scroll animation for category filter (exactly like website)
-    useEffect(() => {
-        if (categories.length > 0) {
-            // Calculate total width of ONE set of categories (not duplicated)
-            const categoryWidth = 120; // Each category item width
-            const gap = 16; // Gap between items
-            const totalWidth = (categories.length + 1) * (categoryWidth + gap); // +1 for "All"
+    // Start animation helper.
+    // NOTE: Do NOT call scrollX.setValue() with useNativeDriver: true —
+    // it corrupts the native animation thread and permanently stops the loop.
+    // Instead: stop old loop, then start a fresh one with a 50ms gap.
+    const startAnimation = useCallback(() => {
+        if (categories.length === 0) return;
+        const categoryWidth = 120;
+        const gap = 16;
+        const totalWidth = (categories.length + 1) * (categoryWidth + gap);
 
-            // Create looping animation
-            animationRef.current = Animated.loop(
-                Animated.timing(scrollX, {
-                    toValue: -totalWidth, // Scroll exactly one set width (50%)
-                    duration: 30000, // 30 seconds like website
-                    useNativeDriver: true,
-                    easing: (t) => t, // Linear like website
-                })
-            );
-
-            // Start animation
-            isPaused.current = false;
-            animationRef.current.start();
-
-            return () => {
-                if (animationRef.current) {
-                    animationRef.current.stop();
-                }
-            };
-        }
-    }, [categories]);
-
-    // Pause animation - can be called multiple times
-    const pauseAnimation = () => {
-        if (animationRef.current && !isPaused.current) {
+        if (animationRef.current) {
             animationRef.current.stop();
-            isPaused.current = true;
         }
-    };
 
-    // Resume animation - recreates and restarts, works multiple times
-    const resumeAnimation = () => {
-        if (categories.length > 0 && isPaused.current) {
-            const categoryWidth = 120;
-            const gap = 16;
-            const totalWidth = (categories.length + 1) * (categoryWidth + gap);
-
-            // Get current scroll position
-            const currentValue = scrollX._value;
-
-            // Reset to start position when reaching end (for seamless loop)
-            if (currentValue <= -totalWidth) {
-                scrollX.setValue(0);
-            }
-
-            // Recreate the animation from current position
+        // 50ms gap ensures stop() fully releases the native thread before restart
+        setTimeout(() => {
             animationRef.current = Animated.loop(
                 Animated.timing(scrollX, {
                     toValue: -totalWidth,
@@ -131,11 +97,37 @@ const MenuScreen = ({ navigation }) => {
                     easing: (t) => t,
                 })
             );
-
-            isPaused.current = false;
             animationRef.current.start();
+        }, 50);
+    }, [categories, scrollX]);
+
+    // Kick off animation whenever categories load
+    useEffect(() => {
+        if (categories.length > 0) {
+            startAnimation();
         }
-    };
+        return () => {
+            if (animationRef.current) {
+                animationRef.current.stop();
+            }
+        };
+    }, [categories]);
+
+    // Restart animation every time this screen comes into focus
+    // (fixes: animation stays dead after navigating to CategoryScreen and back)
+    useFocusEffect(
+        useCallback(() => {
+            if (categories.length > 0) {
+                startAnimation();
+            }
+            return () => {
+                // Stop animation when leaving screen — saves battery
+                if (animationRef.current) {
+                    animationRef.current.stop();
+                }
+            };
+        }, [categories, startAnimation])
+    );
 
     const handleAddToCart = async (foodId) => {
         const result = await addToCart(foodId);
@@ -233,9 +225,6 @@ const MenuScreen = ({ navigation }) => {
                         styles.categoryScrollWrapper,
                         { transform: [{ translateX: scrollX }] }
                     ]}
-                    onStartShouldSetResponder={() => true}
-                    onResponderGrant={pauseAnimation}
-                    onResponderRelease={resumeAnimation}
                 >
                     {/* First set - "All" + categories */}
                     <TouchableOpacity
@@ -261,7 +250,7 @@ const MenuScreen = ({ navigation }) => {
                         <TouchableOpacity
                             key={`first-${item.id}`}
                             style={styles.categoryFilterItem}
-                            onPress={() => handleCategorySelect(item.id)}
+                            onPress={() => handleCategoryNavigate(item.id, item.name)}
                         >
                             <View style={[
                                 styles.categoryImageContainer,
@@ -303,7 +292,7 @@ const MenuScreen = ({ navigation }) => {
                         <TouchableOpacity
                             key={`second-${item.id}`}
                             style={styles.categoryFilterItem}
-                            onPress={() => handleCategorySelect(item.id)}
+                            onPress={() => handleCategoryNavigate(item.id, item.name)}
                         >
                             <View style={[
                                 styles.categoryImageContainer,
