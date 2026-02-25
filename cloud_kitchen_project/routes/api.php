@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\User\CartController;
 use App\Http\Controllers\Api\User\OrderController;
 use App\Http\Controllers\Api\User\AddressController;
 use App\Http\Controllers\Api\User\ProfileController;
+use App\Http\Controllers\Api\User\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -107,6 +108,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/user/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('api.v1.user.orders.cancel');
         // POST /api/v1/user/orders/{order}/rate
         Route::post('/user/orders/{order}/rate', [OrderController::class, 'rate'])->name('api.v1.user.orders.rate');
+
+        // Notifications
+        // GET /api/v1/user/notifications
+        Route::get('/user/notifications', [NotificationController::class, 'index'])->name('api.v1.user.notifications.index');
+        // POST /api/v1/user/notifications/mark-read
+        Route::post('/user/notifications/mark-read', [NotificationController::class, 'markAsRead'])->name('api.v1.user.notifications.mark-read');
 
         // Address
         // GET /api/v1/user/addresses

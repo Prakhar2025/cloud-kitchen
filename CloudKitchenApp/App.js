@@ -30,6 +30,7 @@ import CartConfirmationScreen from './src/screens/User/CartConfirmationScreen';
 import CheckoutScreen from './src/screens/User/CheckoutScreen';
 import OrdersScreen from './src/screens/User/OrdersScreen';
 import ProfileScreen from './src/screens/User/ProfileScreen';
+import NotificationsScreen from './src/screens/User/NotificationsScreen';
 
 // Styles
 import Colors from './src/styles/colors';
@@ -77,6 +78,8 @@ const UserTabs = () => {
                         iconName = focused ? 'cart' : 'cart-outline';
                     } else if (route.name === 'Orders') {
                         iconName = focused ? 'receipt' : 'receipt-outline';
+                    } else if (route.name === 'Notifications') {
+                        iconName = focused ? 'notifications' : 'notifications-outline';
                     } else if (route.name === 'Profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -88,6 +91,7 @@ const UserTabs = () => {
             <Tab.Screen name="Menu" component={MenuScreen} />
             <Tab.Screen name="Cart" component={CartScreen} />
             <Tab.Screen name="Orders" component={OrdersScreen} />
+            <Tab.Screen name="Notifications" component={NotificationsScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );

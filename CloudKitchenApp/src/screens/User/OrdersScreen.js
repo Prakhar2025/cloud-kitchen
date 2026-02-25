@@ -1,14 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
-import { getOrders, cancelOrder } from '../../api/order';
+import { getOrders, cancelOrder, rateOrder } from '../../api/order';
 
 const OrdersScreen = () => {
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
+    const [ratingModalVisible, setRatingModalVisible] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [review, setReview] = useState('');
+    const [submittingRating, setSubmittingRating] = useState(false);
 
     const fetchOrders = async () => {
         const result = await getOrders();
@@ -33,11 +38,68 @@ const OrdersScreen = () => {
     const handleCancel = async (orderId) => {
         const result = await cancelOrder(orderId);
         if (result.success) {
-            alert("Order Cancelled");
+            Alert.alert("Success", "Order cancelled successfully");
             fetchOrders();
         } else {
-            alert(result.error);
+            Alert.alert("Error", result.error);
         }
+    };
+
+    const openRatingModal = (order) => {
+        setSelectedOrder(order);
+        setRating(0);
+        setReview('');
+        setRatingModalVisible(true);
+    };
+
+    const closeRatingModal = () => {
+        setRatingModalVisible(false);
+        setSelectedOrder(null);
+        setRating(0);
+        setReview('');
+    };
+
+    const handleSubmitRating = async () => {
+        if (rating === 0) {
+            Alert.alert("Rating Required", "Please select a rating before submitting");
+            return;
+        }
+
+        setSubmittingRating(true);
+        const result = await rateOrder(selectedOrder.id, {
+            stars: rating,
+            review: review.trim() || null
+        });
+        setSubmittingRating(false);
+
+        if (result.success) {
+            Alert.alert("Success", result.message || "Thank you for rating!");
+            closeRatingModal();
+            fetchOrders();
+        } else {
+            Alert.alert("Error", result.error);
+        }
+    };
+
+    const renderStars = () => {
+        return (
+            <View style={styles.starsContainer}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                        key={star}
+                        onPress={() => setRating(star)}
+                        style={styles.starButton}
+                    >
+                        <Text style={[
+                            styles.starIcon,
+                            star <= rating && styles.starIconActive
+                        ]}>
+                            {star <= rating ? '★' : '☆'}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
     };
 
     const renderOrderItem = ({ item }) => (
@@ -60,11 +122,21 @@ const OrdersScreen = () => {
 
             <View style={styles.orderFooter}>
                 <Text style={styles.totalAmount}>Total: ₹{item.total_amount}</Text>
-                {item.status === 'pending' && (
-                    <TouchableOpacity onPress={() => handleCancel(item.id)} style={styles.cancelButton}>
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                )}
+                <View style={styles.actionButtons}>
+                    {item.status === 'pending' && (
+                        <TouchableOpacity onPress={() => handleCancel(item.id)} style={styles.cancelButton}>
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    )}
+                    {item.status === 'delivered' && (
+                        <TouchableOpacity 
+                            onPress={() => openRatingModal(item)} 
+                            style={styles.rateButton}
+                        >
+                            <Text style={styles.rateButtonText}>⭐ Rate Order</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
         </View>
     );
@@ -105,6 +177,59 @@ const OrdersScreen = () => {
                     </View>
                 }
             />
+
+            {/* Rating Modal */}
+            <Modal
+                visible={ratingModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={closeRatingModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Rate Your Order</Text>
+                        <Text style={styles.modalSubtitle}>
+                            Order #{selectedOrder?.id}
+                        </Text>
+
+                        {renderStars()}
+
+                        <TextInput
+                            style={styles.reviewInput}
+                            placeholder="Share your experience (optional)"
+                            placeholderTextColor={Colors.TEXT.tertiary || '#999'}
+                            value={review}
+                            onChangeText={setReview}
+                            multiline
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                            maxLength={500}
+                        />
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity 
+                                onPress={closeRatingModal} 
+                                style={[styles.modalButton, styles.cancelModalButton]}
+                                disabled={submittingRating}
+                            >
+                                <Text style={styles.cancelModalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                onPress={handleSubmitRating} 
+                                style={[styles.modalButton, styles.submitButton]}
+                                disabled={submittingRating}
+                            >
+                                {submittingRating ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={styles.submitButtonText}>Submit Rating</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -191,6 +316,10 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.primary,
     },
+    actionButtons: {
+        flexDirection: 'row',
+        gap: 8,
+    },
     cancelButton: {
         borderWidth: 1,
         borderColor: 'red',
@@ -201,11 +330,113 @@ const styles = StyleSheet.create({
     cancelButtonText: {
         color: 'red',
         fontSize: 12,
+        fontWeight: '600',
+    },
+    rateButton: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    rateButtonText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
     },
     emptyText: {
         color: Colors.TEXT.secondary,
         fontSize: 16,
-    }
+    },
+    // Rating Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 24,
+        width: '100%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: Colors.TEXT.secondary,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    starsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    starButton: {
+        padding: 8,
+    },
+    starIcon: {
+        fontSize: 36,
+        color: '#ccc',
+    },
+    starIconActive: {
+        color: '#FFD700',
+    },
+    reviewInput: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 14,
+        color: Colors.TEXT.primary,
+        minHeight: 100,
+        marginBottom: 20,
+        backgroundColor: '#f9f9f9',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 44,
+    },
+    cancelModalButton: {
+        backgroundColor: '#f0f0f0',
+        borderWidth: 1,
+        borderColor: '#ddd',
+    },
+    cancelModalButtonText: {
+        color: Colors.TEXT.secondary,
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    submitButton: {
+        backgroundColor: Colors.primary,
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: '700',
+    },
 });
 
 export default OrdersScreen;

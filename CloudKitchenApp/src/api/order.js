@@ -46,8 +46,30 @@ export const cancelOrder = async (orderId) => {
     }
 };
 
+/**
+ * Rate an order with stars and optional review
+ * @param {number} orderId - The order ID to rate
+ * @param {Object} ratingData - {stars: number (1-5), review: string (optional)}
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+export const rateOrder = async (orderId, ratingData) => {
+    try {
+        const response = await apiClient.post(`/user/orders/${orderId}/rate`, ratingData);
+        return {
+            success: true,
+            message: response.data.message || 'Rating submitted successfully'
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message || 'Failed to submit rating'
+        };
+    }
+};
+
 export default {
     getOrders,
     placeOrder,
-    cancelOrder
+    cancelOrder,
+    rateOrder
 };

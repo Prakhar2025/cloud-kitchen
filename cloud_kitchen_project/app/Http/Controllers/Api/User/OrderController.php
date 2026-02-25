@@ -148,8 +148,63 @@ class OrderController extends Controller
 
     public function rate(Request $request, Order $order)
     {
-         // Assume basic rating logic for now, expanding based on UserOrderController if needed
-         // For now, let's stick to the core ordering flow.
-         return response()->json(['success' => true, 'message' => 'Rating feature pending implementation']);
+        // Authorization check
+        if ($order->user_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        // Order must be delivered to be rated
+        if ($order->status !== 'delivered') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only delivered orders can be rated'
+            ], 400);
+        }
+
+        // Validation
+        $request->validate([
+            'stars' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:500',
+        ]);
+
+        // Get food_item_id from order items
+        $foodItemId = $order->items()->value('food_item_id');
+
+        if (!$foodItemId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to rate. Food item missing.'
+            ], 400);
+        }
+
+        // Check if already rated (prevent duplicate ratings)
+        $alreadyRated = \App\Models\Rating::where('user_id', auth()->id())
+            ->where('order_id', $order->id)
+            ->where('food_item_id', $foodItemId)
+            ->exists();
+
+        if ($alreadyRated) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already rated this order'
+            ], 400);
+        }
+
+        // Create rating
+        \App\Models\Rating::create([
+            'order_id' => $order->id,
+            'user_id' => auth()->id(),
+            'food_item_id' => $foodItemId,
+            'rating' => $request->stars,
+            'review' => $request->review,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thanks for rating! Your feedback helps us improve.'
+        ]);
     }
 }
