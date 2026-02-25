@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
 import { addToCart } from '../../api/cart';
+import FoodDetailModal from '../../components/FoodDetailModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 32; // Screen width minus horizontal padding
@@ -14,6 +15,8 @@ const MenuScreen = ({ navigation }) => {
     const [banners, setBanners] = useState([]);
     const [searchText, setSearchText] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedFood, setSelectedFood] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
     const scrollX = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef(null);
     const animationRef = useRef(null);
@@ -73,7 +76,7 @@ const MenuScreen = ({ navigation }) => {
             const categoryWidth = 120; // Each category item width
             const gap = 16; // Gap between items
             const totalWidth = (categories.length + 1) * (categoryWidth + gap); // +1 for "All"
-            
+
             // Create looping animation
             animationRef.current = Animated.loop(
                 Animated.timing(scrollX, {
@@ -83,7 +86,7 @@ const MenuScreen = ({ navigation }) => {
                     easing: (t) => t, // Linear like website
                 })
             );
-            
+
             // Start animation
             isPaused.current = false;
             animationRef.current.start();
@@ -110,15 +113,15 @@ const MenuScreen = ({ navigation }) => {
             const categoryWidth = 120;
             const gap = 16;
             const totalWidth = (categories.length + 1) * (categoryWidth + gap);
-            
+
             // Get current scroll position
             const currentValue = scrollX._value;
-            
+
             // Reset to start position when reaching end (for seamless loop)
             if (currentValue <= -totalWidth) {
                 scrollX.setValue(0);
             }
-            
+
             // Recreate the animation from current position
             animationRef.current = Animated.loop(
                 Animated.timing(scrollX, {
@@ -128,7 +131,7 @@ const MenuScreen = ({ navigation }) => {
                     easing: (t) => t,
                 })
             );
-            
+
             isPaused.current = false;
             animationRef.current.start();
         }
@@ -143,8 +146,22 @@ const MenuScreen = ({ navigation }) => {
         }
     };
 
+    const handleOpenFoodDetail = (food) => {
+        setSelectedFood(food);
+        setModalVisible(true);
+    };
+
+    const handleCloseFoodDetail = () => {
+        setModalVisible(false);
+        setSelectedFood(null);
+    };
+
     const renderFoodItem = ({ item }) => (
-        <View style={styles.foodCard}>
+        <TouchableOpacity
+            style={styles.foodCard}
+            onPress={() => handleOpenFoodDetail(item)}
+            activeOpacity={0.7}
+        >
             <Image
                 source={{ uri: item.image_url || 'https://via.placeholder.com/150' }}
                 style={styles.foodImage}
@@ -167,7 +184,7 @@ const MenuScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     const renderCategory = ({ item }) => (
@@ -338,6 +355,14 @@ const MenuScreen = ({ navigation }) => {
                         </View>
                     ) : null
                 }
+            />
+
+            {/* Food Detail Modal */}
+            <FoodDetailModal
+                visible={modalVisible}
+                food={selectedFood}
+                onClose={handleCloseFoodDetail}
+                onAddToCart={handleAddToCart}
             />
         </SafeAreaView>
     );
