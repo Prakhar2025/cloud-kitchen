@@ -114,7 +114,7 @@ const OrderSuccessScreen = ({ navigation, route }) => {
     const handleTrackOrder = () => {
         navigation.reset({
             index: 0,
-            routes: [{ name: 'Main', params: { screen: 'Orders' } }],
+            routes: [{ name: 'Main', params: { tabIndex: 2 } }],
         });
     };
 
@@ -124,7 +124,7 @@ const OrderSuccessScreen = ({ navigation, route }) => {
     const handleBackToMenu = () => {
         navigation.reset({
             index: 0,
-            routes: [{ name: 'Main', params: { screen: 'Menu' } }],
+            routes: [{ name: 'Main', params: { tabIndex: 0 } }],
         });
     };
 

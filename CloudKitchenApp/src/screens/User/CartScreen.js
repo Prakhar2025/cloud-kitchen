@@ -1,29 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
-import { getCart, removeFromCart, decreaseQuantity, addToCart } from '../../api/cart';
+import { useCart } from '../../context/CartContext';
 import { getAddresses } from '../../api/user';
 
 const CartScreen = ({ navigation }) => {
-    const [loading, setLoading] = useState(true);
-    const [cartItems, setCartItems] = useState([]);
-    const [subtotal, setSubtotal] = useState(0);
-    const [placingOrder, setPlacingOrder] = useState(false);
-
-    // We need to fetch address to simulate simple checkout defaults for now
-    const [defaultAddressId, setDefaultAddressId] = useState(null);
-
-    const fetchCart = async () => {
-        setLoading(true);
-        const result = await getCart();
-        if (result.success) {
-            setCartItems(result.data.items);
-            setSubtotal(result.data.subtotal);
-        }
-        setLoading(false);
-    };
+    const { cartItems, subtotal, loading, increaseItem, decreaseItem, removeItem, refreshCart } = useCart();
+    const [defaultAddressId, setDefaultAddressId] = React.useState(null);
 
     const fetchAddress = async () => {
         const result = await getAddresses();
@@ -32,32 +17,22 @@ const CartScreen = ({ navigation }) => {
         }
     };
 
+    // Refresh address when tab comes into focus; cart is already live via context
     useFocusEffect(
         useCallback(() => {
-            fetchCart();
             fetchAddress();
+            refreshCart(); // ensure cart is in sync when tab focused
         }, [])
     );
 
-    const handleIncrease = async (item) => {
-        const result = await addToCart(item.food_item_id);
-        if (result.success) fetchCart();
-    };
-
-    const handleDecrease = async (item) => {
-        const result = await decreaseQuantity(item.food_item_id);
-        if (result.success) fetchCart();
-    };
-
-    const handleRemove = async (item) => {
-        const result = await removeFromCart(item.food_item_id);
-        if (result.success) fetchCart();
-    };
+    const handleIncrease = (item) => increaseItem(item);
+    const handleDecrease = (item) => decreaseItem(item);
+    const handleRemove   = (item) => removeItem(item);
 
     const handleProceedToCheckout = () => {
         if (!defaultAddressId) {
             Alert.alert("No Address", "Please add an address in your profile to continue.", [
-                { text: "Go to Profile", onPress: () => navigation.navigate('Profile') }
+                { text: "Go to Profile", onPress: () => navigation.navigate('Main', { tabIndex: 4 }) }
             ]);
             return;
         }
@@ -109,7 +84,7 @@ const CartScreen = ({ navigation }) => {
             {cartItems.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>Your cart is empty 🛒</Text>
-                    <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Menu')}>
+                    <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Main', { tabIndex: 0 })}>
                         <Text style={styles.browseButtonText}>Browse Menu</Text>
                     </TouchableOpacity>
                 </View>
@@ -128,9 +103,8 @@ const CartScreen = ({ navigation }) => {
                             <Text style={styles.totalValue}>₹{subtotal}</Text>
                         </View>
                         <TouchableOpacity
-                            style={[styles.checkoutButton, placingOrder && { opacity: 0.7 }]}
+                            style={styles.checkoutButton}
                             onPress={handleProceedToCheckout}
-                            disabled={placingOrder}
                         >
                             <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
                         </TouchableOpacity>

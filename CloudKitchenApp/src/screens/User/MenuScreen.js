@@ -4,13 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
-import { addToCart } from '../../api/cart';
+import { useCart } from '../../context/CartContext';
 import FoodDetailModal from '../../components/FoodDetailModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 32; // Screen width minus horizontal padding
 
 const MenuScreen = ({ navigation }) => {
+    const { addItem, toastMessage } = useCart();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
@@ -129,13 +130,9 @@ const MenuScreen = ({ navigation }) => {
         }, [categories, startAnimation])
     );
 
-    const handleAddToCart = async (foodId) => {
-        const result = await addToCart(foodId);
-        if (result.success) {
-            alert(result.message); // Simple feedback for now
-        } else {
-            alert(result.error);
-        }
+    // Pass the full food object so CartContext can do optimistic UI
+    const handleAddToCart = (foodItem) => {
+        addItem(foodItem);
     };
 
     const handleOpenFoodDetail = (food) => {
@@ -170,7 +167,7 @@ const MenuScreen = ({ navigation }) => {
                     <Text style={styles.foodPrice}>₹{item.price}</Text>
                     <TouchableOpacity
                         style={styles.addButton}
-                        onPress={() => handleAddToCart(item.id)}
+                        onPress={() => handleAddToCart(item)}
                     >
                         <Text style={styles.addButtonText}>ADD</Text>
                     </TouchableOpacity>
@@ -353,6 +350,13 @@ const MenuScreen = ({ navigation }) => {
                 onClose={handleCloseFoodDetail}
                 onAddToCart={handleAddToCart}
             />
+
+            {/* Cart Toast — brief "Added to cart ✓" overlay */}
+            {!!toastMessage && (
+                <View style={styles.toast} pointerEvents="none">
+                    <Text style={styles.toastText}>{toastMessage}</Text>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -361,6 +365,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colors.BACKGROUND.secondary,
+    },
+    // Toast overlay
+    toast: {
+        position: 'absolute',
+        bottom: 24,
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0,0,0,0.78)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 24,
+        zIndex: 999,
+    },
+    toastText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     centered: {
         flex: 1,

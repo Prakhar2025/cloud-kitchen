@@ -85,7 +85,7 @@ const FoodDetailModal = ({ visible, food, onClose, onAddToCart }) => {
     const handleAddToCart = async () => {
         if (!food || adding) return;
         setAdding(true);
-        await onAddToCart(food.id);
+        await onAddToCart(food);   // pass full food object for optimistic update
         setAdding(false);
         handleClose();
     };

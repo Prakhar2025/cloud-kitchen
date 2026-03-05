@@ -20,6 +20,7 @@ import PagerView from 'react-native-pager-view';
 
 // Context
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { CartProvider, useCart } from './src/context/CartContext';
 
 // Screens
 import LoginScreen from './src/screens/Auth/LoginScreen';
@@ -73,9 +74,20 @@ const TAB_CONFIG = [
 // User Tab Navigator — WhatsApp-style swipe between tabs
 // =============================================================================
 
-const UserTabs = ({ navigation }) => {
-    const [activeIndex, setActiveIndex] = React.useState(0);
+const UserTabs = ({ navigation, route }) => {
+    const initialIndex = route?.params?.tabIndex ?? 0;
+    const [activeIndex, setActiveIndex] = React.useState(initialIndex);
     const pagerRef = React.useRef(null);
+    const { cartCount } = useCart();
+
+    // Jump to requested tab whenever params.tabIndex changes (e.g. after reset/navigate)
+    React.useEffect(() => {
+        const idx = route?.params?.tabIndex;
+        if (idx !== undefined && idx !== activeIndex) {
+            pagerRef.current?.setPage(idx);
+            setActiveIndex(idx);
+        }
+    }, [route?.params?.tabIndex]);
 
     const goToTab = (index) => {
         pagerRef.current?.setPage(index);
@@ -113,11 +125,21 @@ const UserTabs = ({ navigation }) => {
                             onPress={() => goToTab(index)}
                             activeOpacity={0.7}
                         >
-                            <Ionicons
-                                name={isActive ? tab.icon : tab.iconOff}
-                                size={24}
-                                color={isActive ? Colors.primary : '#9e9e9e'}
-                            />
+                            <View>
+                                <Ionicons
+                                    name={isActive ? tab.icon : tab.iconOff}
+                                    size={24}
+                                    color={isActive ? Colors.primary : '#9e9e9e'}
+                                />
+                                {/* Cart badge */}
+                                {tab.name === 'Cart' && cartCount > 0 && (
+                                    <View style={tabStyles.badge}>
+                                        <Text style={tabStyles.badgeText}>
+                                            {cartCount > 99 ? '99+' : cartCount}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
                             <Text style={[tabStyles.tabLabel, isActive && tabStyles.tabLabelActive]}>
                                 {tab.name}
                             </Text>
@@ -156,6 +178,23 @@ const tabStyles = StyleSheet.create({
     },
     tabLabelActive: {
         color: Colors.primary,
+        fontWeight: '700',
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -8,
+        backgroundColor: Colors.primary,
+        borderRadius: 8,
+        minWidth: 16,
+        height: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 3,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 9,
         fontWeight: '700',
     },
 });
@@ -229,10 +268,12 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <AuthProvider>
-                <NavigationContainer>
-                    <StatusBar style="dark" />
-                    <AppNavigator />
-                </NavigationContainer>
+                <CartProvider>
+                    <NavigationContainer>
+                        <StatusBar style="dark" />
+                        <AppNavigator />
+                    </NavigationContainer>
+                </CartProvider>
             </AuthProvider>
         </SafeAreaProvider>
     );
