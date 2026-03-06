@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Dimensions, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
 import { useCart } from '../../context/CartContext';
@@ -13,7 +14,7 @@ const BANNER_WIDTH = SCREEN_WIDTH - 32; // Screen width minus horizontal padding
 
 const MenuScreen = ({ navigation }) => {
     const { addItem, toastMessage } = useCart();
-    const { isGuest } = useAuth();
+    const { isGuest, user, isAuthenticated } = useAuth();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
@@ -221,6 +222,33 @@ const MenuScreen = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Menu</Text>
+                
+                <TouchableOpacity 
+                    style={styles.profileHeaderBadge}
+                    onPress={() => {
+                        if (isAuthenticated) {
+                            navigation.navigate('Profile');
+                        } else {
+                            navigation.navigate('Login');
+                        }
+                    }}
+                >
+                    {isAuthenticated && user ? (
+                        <View style={styles.profileHeaderUser}>
+                            <Text style={styles.profileHeaderName} numberOfLines={1}>
+                                {user.name ? user.name.split(' ')[0] : 'User'}
+                            </Text>
+                            <View style={styles.profileHeaderIcon}>
+                                <Ionicons name="person" size={16} color={Colors.white} />
+                            </View>
+                        </View>
+                    ) : (
+                        <View style={styles.profileHeaderGuest}>
+                            <Text style={styles.profileHeaderLoginText}>Login</Text>
+                            <Ionicons name="log-in-outline" size={18} color={Colors.primary} />
+                        </View>
+                    )}
+                </TouchableOpacity>
             </View>
 
             <View style={styles.searchContainer}>
@@ -407,13 +435,61 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: Colors.white,
         padding: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
+        borderBottomColor: Colors.border || '#eaeaea',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: 'bold',
         color: Colors.TEXT.primary,
+    },
+    profileHeaderBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    profileHeaderUser: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.BACKGROUND.secondary || '#f5f5f5',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        gap: 8,
+    },
+    profileHeaderName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.TEXT.primary,
+        maxWidth: 80,
+    },
+    profileHeaderIcon: {
+        backgroundColor: Colors.primary || '#FF6B35',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileHeaderGuest: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.PRIMARY ? Colors.PRIMARY.light + '20' : '#ffebee',
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: (Colors.primary || '#FF6B35') + '40',
+    },
+    profileHeaderLoginText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: Colors.primary || '#FF6B35',
     },
     searchContainer: {
         padding: 16,
