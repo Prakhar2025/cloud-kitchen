@@ -1,19 +1,22 @@
 import React, { useState, useCallback } from 'react';
-import { 
-    StyleSheet, 
-    View, 
-    Text, 
-    FlatList, 
-    ActivityIndicator, 
+import {
+    StyleSheet,
+    View,
+    Text,
+    FlatList,
+    ActivityIndicator,
     RefreshControl,
-    TouchableOpacity 
+    TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getNotifications } from '../../api/notification';
+import { useAuth } from '../../context/AuthContext';
+import GuestPrompt from '../../components/GuestPrompt';
 
 const NotificationsScreen = () => {
+    const { isGuest } = useAuth();
     const [loading, setLoading] = useState(true);
     const [notifications, setNotifications] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -27,16 +30,21 @@ const NotificationsScreen = () => {
         setRefreshing(false);
     };
 
+    // Hook always called — guest check is done inside callback and after
     useFocusEffect(
         useCallback(() => {
+            if (isGuest) return;
             fetchNotifications();
-        }, [])
+        }, [isGuest])
     );
 
     const onRefresh = () => {
         setRefreshing(true);
         fetchNotifications();
     };
+
+    // Early return AFTER all hooks (Rules of Hooks)
+    if (isGuest) return <GuestPrompt feature="notifications" />;
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -50,16 +58,16 @@ const NotificationsScreen = () => {
         if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
         if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
         if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        
-        return date.toLocaleDateString('en-IN', { 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric' 
+
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
         });
     };
 
     const renderNotificationItem = ({ item }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={[
                 styles.notificationCard,
                 !item.is_read && styles.unreadCard
@@ -75,7 +83,7 @@ const NotificationsScreen = () => {
                         <Text style={styles.iconText}>🔔</Text>
                     </View>
                 </View>
-                
+
                 <View style={styles.textContainer}>
                     <Text style={[
                         styles.notificationMessage,
@@ -124,8 +132,8 @@ const NotificationsScreen = () => {
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl 
-                        refreshing={refreshing} 
+                    <RefreshControl
+                        refreshing={refreshing}
                         onRefresh={onRefresh}
                         colors={[Colors.primary]}
                         tintColor={Colors.primary}

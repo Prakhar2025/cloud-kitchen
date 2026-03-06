@@ -205,7 +205,7 @@ const tabStyles = StyleSheet.create({
 // =============================================================================
 
 const AppNavigator = () => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isGuest, isLoading } = useAuth();
 
     // Show loading screen while checking auth status
     if (isLoading) {
@@ -220,37 +220,22 @@ const AppNavigator = () => {
                 animation: 'fade',
             }}
         >
-            {isAuthenticated ? (
-                // Authenticated routes
+            {(isAuthenticated || isGuest) ? (
+                // Main stack — shown for both authenticated users & guests
+                // Protected screens (Cart, Orders, Profile, Notifications) handle
+                // their own guest gate via <GuestPrompt> component
                 <>
                     <Stack.Screen name="Main" component={UserTabs} />
-                    <Stack.Screen
-                        name="CartConfirmation"
-                        component={CartConfirmationScreen}
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="Checkout"
-                        component={CheckoutScreen}
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="Invoice"
-                        component={InvoiceScreen}
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="OrderSuccess"
-                        component={OrderSuccessScreen}
-                        options={{ headerShown: false, gestureEnabled: false }}
-                    />
-                    <Stack.Screen
-                        name="Category"
-                        component={CategoryScreen}
-                        options={{ headerShown: false }}
-                    />
-                </>) : (
-                // Unauthenticated routes
+                    <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
+                    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ animation: 'slide_from_bottom' }} />
+                    <Stack.Screen name="CartConfirmation" component={CartConfirmationScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
+                </>
+            ) : (
+                // Fallback — only reached during initial app load (isLoading=true covers this)
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />
                     <Stack.Screen name="SignUp" component={SignUpScreen} />

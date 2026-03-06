@@ -4,10 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { getAddresses } from '../../api/user';
+import GuestPrompt from '../../components/GuestPrompt';
 
 const CartScreen = ({ navigation }) => {
     const { cartItems, subtotal, loading, increaseItem, decreaseItem, removeItem, refreshCart } = useCart();
+    const { isGuest } = useAuth();
     const [defaultAddressId, setDefaultAddressId] = React.useState(null);
 
     const fetchAddress = async () => {
@@ -17,17 +20,22 @@ const CartScreen = ({ navigation }) => {
         }
     };
 
-    // Refresh address when tab comes into focus; cart is already live via context
+    // ALL hooks must be called unconditionally (Rules of Hooks)
+    // Guest check is done AFTER all hooks below
     useFocusEffect(
         useCallback(() => {
+            if (isGuest) return; // skip fetch for guests
             fetchAddress();
-            refreshCart(); // ensure cart is in sync when tab focused
-        }, [])
+            refreshCart();
+        }, [isGuest])
     );
+
+    // Early return AFTER all hooks
+    if (isGuest) return <GuestPrompt feature="cart" />;
 
     const handleIncrease = (item) => increaseItem(item);
     const handleDecrease = (item) => decreaseItem(item);
-    const handleRemove   = (item) => removeItem(item);
+    const handleRemove = (item) => removeItem(item);
 
     const handleProceedToCheckout = () => {
         if (!defaultAddressId) {

@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isGuest, setIsGuest] = useState(false);
 
     // ==========================================================================
     // Initialize - Load saved auth data on app start
@@ -61,20 +62,20 @@ export const AuthProvider = ({ children }) => {
                 setIsAuthenticated(true);
 
                 // Optionally verify token is still valid
-                // This makes an API call to check if token works
                 try {
                     const result = await authApi.getUser();
                     if (result.success) {
                         setUser(result.data.user);
                     } else {
-                        // Token is invalid, clear auth
+                        // Token invalid — drop to guest mode (stay in app)
                         await handleLogout();
                     }
                 } catch (error) {
-                    // Token verification failed, but keep user logged in
-                    // (might be a network issue)
                     console.warn('Token verification failed:', error);
                 }
+            } else {
+                // No stored token — open as guest (Swiggy-style: show menu immediately)
+                setIsGuest(true);
             }
         } catch (error) {
             console.error('Failed to load stored auth:', error);
@@ -105,6 +106,7 @@ export const AuthProvider = ({ children }) => {
                 setToken(newToken);
                 setUser(newUser);
                 setIsAuthenticated(true);
+                setIsGuest(false); // Clear guest mode on login
 
                 // Save to storage
                 await saveAuthData(newToken, newUser);
@@ -194,8 +196,23 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         setIsAuthenticated(false);
+        setIsGuest(true); // Stay in app as guest after logout (Swiggy-style)
         await clearAuthData();
     };
+
+    // ==========================================================================
+    // Guest Mode
+    // ==========================================================================
+
+    /** Allow user to browse without logging in */
+    const continueAsGuest = useCallback(() => {
+        setIsGuest(true);
+    }, []);
+
+    /** Exit guest mode — goes back to login screen */
+    const exitGuest = useCallback(() => {
+        setIsGuest(false);
+    }, []);
 
     // ==========================================================================
     // Refresh User
@@ -231,12 +248,15 @@ export const AuthProvider = ({ children }) => {
         token,
         isLoading,
         isAuthenticated,
+        isGuest,
 
         // Methods
         login,
         register,
         logout,
         refreshUser,
+        continueAsGuest,
+        exitGuest,
     };
 
     return (

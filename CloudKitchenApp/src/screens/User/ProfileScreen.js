@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getAddresses, addAddress, deleteAddress } from '../../api/user';
 import { useFocusEffect } from '@react-navigation/native';
 import TabBar from '../../components/TabBar';
+import GuestPrompt from '../../components/GuestPrompt';
 
 const PROFILE_TABS = [
     { key: 'profile', label: 'Profile' },
@@ -13,15 +14,13 @@ const PROFILE_TABS = [
 ];
 
 const ProfileScreen = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, isGuest } = useAuth();
     const [addresses, setAddresses] = useState([]);
     const [activeTab, setActiveTab] = useState('profile');
-
-    // Simple state for new address form (collapsible ideally, but simple for now)
     const [showAddAddress, setShowAddAddress] = useState(false);
     const [newAddress, setNewAddress] = useState({
-        name: user?.name || '',
-        phone: user?.phone || '',
+        name: '',
+        phone: '',
         address_line1: '',
         city: '',
         state: '',
@@ -35,11 +34,16 @@ const ProfileScreen = () => {
         }
     };
 
+    // useFocusEffect MUST be before early return (Rules of Hooks)
     useFocusEffect(
         useCallback(() => {
+            if (isGuest) return;
             fetchAddresses();
-        }, [])
+        }, [isGuest])
     );
+
+    // Early return AFTER ALL hooks
+    if (isGuest) return <GuestPrompt feature="profile" />;
 
     const handleAddAddress = async () => {
         if (!newAddress.address_line1 || !newAddress.city || !newAddress.zip_code) {

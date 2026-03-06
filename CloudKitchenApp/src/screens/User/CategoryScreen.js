@@ -26,14 +26,16 @@ import {
     Image,
     TouchableOpacity,
     ActivityIndicator,
+    Alert,
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
-import { addToCart } from '../../api/cart';
 import FoodDetailModal from '../../components/FoodDetailModal';
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 // =============================================================================
 // Main Component
@@ -41,6 +43,8 @@ import FoodDetailModal from '../../components/FoodDetailModal';
 
 const CategoryScreen = ({ navigation, route }) => {
     const { categoryId, categoryName } = route.params;
+    const { isGuest } = useAuth();
+    const { addItem, toastMessage } = useCart();
 
     const [foodItems, setFoodItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -78,12 +82,22 @@ const CategoryScreen = ({ navigation, route }) => {
     // Handlers
     // -------------------------------------------------------------------------
 
-    const handleAddToCart = async (foodId) => {
-        const result = await addToCart(foodId);
-        if (!result.success) {
-            // silently fail — user will see cart count unchanged
-            console.warn('Add to cart failed:', result.error);
+    const handleAddToCart = async (foodOrItem) => {
+        if (isGuest) {
+            Alert.alert(
+                '🔒 Login Required',
+                'Please log in to add items to your cart.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Login', onPress: () => navigation.navigate('Login') },
+                ]
+            );
+            return;
         }
+        // Always pass full food object to addItem (same as MenuScreen)
+        // ADD button passes item directly; FoodDetailModal passes food object
+        const foodItem = typeof foodOrItem === 'object' ? foodOrItem : foodItems.find(f => f.id === foodOrItem);
+        if (foodItem) addItem(foodItem);
     };
 
     const handleOpenModal = (food) => {
@@ -137,7 +151,7 @@ const CategoryScreen = ({ navigation, route }) => {
                     <Text style={styles.foodPrice}>₹{item.price}</Text>
                     <TouchableOpacity
                         style={styles.addButton}
-                        onPress={() => handleAddToCart(item.id)}
+                        onPress={() => handleAddToCart(item)}
                         activeOpacity={0.8}
                     >
                         <Text style={styles.addButtonText}>ADD</Text>
@@ -228,6 +242,13 @@ const CategoryScreen = ({ navigation, route }) => {
                 onClose={handleCloseModal}
                 onAddToCart={handleAddToCart}
             />
+
+            {/* Cart Toast — same as MenuScreen */}
+            {!!toastMessage && (
+                <View style={styles.toast} pointerEvents="none">
+                    <Text style={styles.toastText}>{toastMessage}</Text>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -427,6 +448,23 @@ const styles = StyleSheet.create({
         color: Colors.white,
         fontWeight: '700',
         fontSize: 14,
+    },
+
+    // Toast overlay — matches MenuScreen
+    toast: {
+        position: 'absolute',
+        bottom: 24,
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0,0,0,0.78)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 24,
+        zIndex: 999,
+    },
+    toastText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

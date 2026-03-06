@@ -54,6 +54,10 @@ Route::prefix('v1')->group(function () {
     // POST /api/v1/login
     Route::post('/login', [AuthController::class, 'login'])
         ->name('api.v1.login');
+
+    // Menu (public — guests can browse without token)
+    // GET /api/v1/user/menu
+    Route::get('/user/menu', [MenuController::class, 'index'])->name('api.v1.user.menu.index');
     
     /*
     |----------------------------------------------------------------------
@@ -85,9 +89,6 @@ Route::prefix('v1')->group(function () {
         // User Module Routes
         // ====================================================================
 
-        // Menu
-        // GET /api/v1/user/menu
-        Route::get('/user/menu', [MenuController::class, 'index'])->name('api.v1.user.menu.index');
 
         // Cart
         // GET /api/v1/user/cart

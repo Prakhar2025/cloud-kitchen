@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Dimensions, Animated } from 'react-native';
+import { StyleSheet, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Dimensions, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getMenu } from '../../api/menu';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import FoodDetailModal from '../../components/FoodDetailModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -12,6 +13,7 @@ const BANNER_WIDTH = SCREEN_WIDTH - 32; // Screen width minus horizontal padding
 
 const MenuScreen = ({ navigation }) => {
     const { addItem, toastMessage } = useCart();
+    const { isGuest } = useAuth();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
@@ -88,8 +90,12 @@ const MenuScreen = ({ navigation }) => {
             animationRef.current.stop();
         }
 
-        // 50ms gap ensures stop() fully releases the native thread before restart
+        // 50ms gap ensures stop() fully releases the native thread before restart.
+        // setValue(0) is safe here — native thread has released, so no corruption.
+        // Without the reset, scrollX stays at its last position and the next loop
+        // covers a tiny distance over 30s → appears extremely slow on re-focus.
         setTimeout(() => {
+            scrollX.setValue(0);
             animationRef.current = Animated.loop(
                 Animated.timing(scrollX, {
                     toValue: -totalWidth,
@@ -132,6 +138,17 @@ const MenuScreen = ({ navigation }) => {
 
     // Pass the full food object so CartContext can do optimistic UI
     const handleAddToCart = (foodItem) => {
+        if (isGuest) {
+            Alert.alert(
+                '🔒 Login Required',
+                'Please log in to add items to your cart.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Login', onPress: () => navigation.navigate('Login') },
+                ]
+            );
+            return;
+        }
         addItem(foodItem);
     };
 

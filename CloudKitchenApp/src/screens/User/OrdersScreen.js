@@ -5,6 +5,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
 import { getOrders, cancelOrder, rateOrder } from '../../api/order';
 import TabBar from '../../components/TabBar';
+import { useAuth } from '../../context/AuthContext';
+import GuestPrompt from '../../components/GuestPrompt';
 
 // Tab definitions for order status filter
 const ORDER_TABS = [
@@ -17,6 +19,7 @@ const ORDER_TABS = [
 ];
 
 const OrdersScreen = ({ navigation }) => {
+    const { isGuest } = useAuth();
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -36,16 +39,21 @@ const OrdersScreen = ({ navigation }) => {
         setRefreshing(false);
     };
 
+    // useFocusEffect MUST be before early return (Rules of Hooks)
     useFocusEffect(
         useCallback(() => {
+            if (isGuest) return;
             fetchOrders();
-        }, [])
+        }, [isGuest])
     );
 
     const onRefresh = () => {
         setRefreshing(true);
         fetchOrders();
     };
+
+    // Early return AFTER ALL hooks
+    if (isGuest) return <GuestPrompt feature="orders" />;
 
     const handleCancel = async (orderId) => {
         const result = await cancelOrder(orderId);

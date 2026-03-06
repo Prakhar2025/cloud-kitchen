@@ -166,8 +166,12 @@ const LoginScreen = ({ navigation }) => {
             const result = await login(email, password);
 
             if (result.success) {
-                // Login successful - navigation will be handled by App.js
-                // based on auth state change
+                // Navigate back to main tabs after login
+                // (works whether coming from GuestPrompt or cold launch)
+                if (navigation.canGoBack()) {
+                    navigation.goBack();
+                }
+                return { success: true };
             } else {
                 // Handle API errors
                 if (result.errors && Object.keys(result.errors).length > 0) {
@@ -194,7 +198,6 @@ const LoginScreen = ({ navigation }) => {
      * Handle forgot password
      */
     const handleForgotPassword = () => {
-        // navigation.navigate('ForgotPassword');
         Alert.alert(
             'Forgot Password',
             'Password reset will be available in the next update!',
@@ -551,6 +554,20 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: Colors.primary,
         fontWeight: '700',
+    },
+
+    // =========================================================================
+    // Guest Browse
+    // =========================================================================
+    guestContainer: {
+        alignItems: 'center',
+        paddingVertical: 12,
+        marginBottom: 16,
+    },
+    guestText: {
+        fontSize: 14,
+        color: Colors.TEXT?.secondary || '#888',
+        textDecorationLine: 'underline',
     },
 
     // =========================================================================
