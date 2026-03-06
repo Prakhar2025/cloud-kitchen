@@ -104,7 +104,6 @@ All API routes use the `/api/v1` prefix. Accessing protected endpoints requires 
 |---|---|---|
 | `/api/v1/register` | `POST` | Create a new user account. |
 | `/api/v1/login` | `POST` | Authenticate and retrieve access token. |
-| `/api/v1/user/menu` | `GET` | Fetch all categories, food items, and banners for the home screen. |
 | `/api/health` | `GET` | API health check ping. Returns status 'ok'. |
 
 ### Protected Routes (Auth Required)
@@ -112,6 +111,7 @@ All API routes use the `/api/v1` prefix. Accessing protected endpoints requires 
 |---|---|---|
 | **Authentication & Profile** | | |
 | `/api/v1/user` | `GET` | Get current authenticated user details. |
+| `/api/v1/user/menu` | `GET` | Fetch all categories, food items, and banners for the home screen. |
 | `/api/v1/logout` | `POST` | Revoke the current access token. |
 | `/api/v1/logout-all` | `POST` | Revoke tokens from all logged-in devices. |
 | `/api/v1/user/profile/update` | `POST` | Update user profile details (Name, etc). |
