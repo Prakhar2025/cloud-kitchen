@@ -139,11 +139,22 @@ class AddressController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $address->delete();
+        try {
+            // Nullify address_id in orders referencing this address (foreign key constraint)
+            \App\Models\Order::where('address_id', $address->id)->update(['address_id' => null]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Address deleted successfully'
-        ]);
+            $address->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Address deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Address delete failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete address. Please try again.'
+            ], 500);
+        }
     }
 }

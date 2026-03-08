@@ -222,12 +222,12 @@ const MenuScreen = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Menu</Text>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                     style={styles.profileHeaderBadge}
                     onPress={() => {
                         if (isAuthenticated) {
-                            navigation.navigate('Profile');
+                            navigation.navigate('Main', { tabIndex: 4 });
                         } else {
                             navigation.navigate('Login');
                         }

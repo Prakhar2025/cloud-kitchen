@@ -198,11 +198,7 @@ const LoginScreen = ({ navigation }) => {
      * Handle forgot password
      */
     const handleForgotPassword = () => {
-        Alert.alert(
-            'Forgot Password',
-            'Password reset will be available in the next update!',
-            [{ text: 'OK' }]
-        );
+        navigation.navigate('ForgotPassword');
     };
 
     // ==========================================================================

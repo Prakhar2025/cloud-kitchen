@@ -205,6 +205,31 @@ export const getUser = async () => {
 };
 
 // =============================================================================
+// Forgot Password
+// =============================================================================
+
+/**
+ * Send password reset link to email
+ * 
+ * @param {string} email - User's email address
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+export const forgotPassword = async (email) => {
+    try {
+        const response = await apiClient.post('/forgot-password', {
+            email: email.trim().toLowerCase(),
+        });
+        return { success: true, message: response.data.message };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.response?.data?.message || 'Failed to send reset link.',
+            errors: error.response?.data?.errors || {},
+        };
+    }
+};
+
+// =============================================================================
 // Health Check
 // =============================================================================
 
@@ -233,5 +258,6 @@ export default {
     logout,
     logoutAll,
     getUser,
+    forgotPassword,
     checkHealth,
 };

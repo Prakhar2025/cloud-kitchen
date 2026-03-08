@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password as PasswordFacade;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -454,5 +455,42 @@ class AuthController extends Controller
                 'message' => 'Logout failed. Please try again.',
             ], 500);
         }
+    }
+
+    /**
+     * ========================================================================
+     * Send password reset link
+     * ========================================================================
+     * 
+     * Sends a password reset email with a link to reset via browser.
+     * Always returns 200 to prevent email enumeration (security best practice).
+     * 
+     * @endpoint POST /api/v1/forgot-password
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        PasswordFacade::sendResetLink(
+            ['email' => strtolower($request->email)]
+        );
+
+        // Always 200 — never reveal if email exists
+        return response()->json([
+            'success' => true,
+            'message' => 'If an account with that email exists, a reset link has been sent.',
+        ], 200);
     }
 }

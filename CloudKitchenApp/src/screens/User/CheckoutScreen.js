@@ -58,7 +58,7 @@ const CheckoutScreen = ({ navigation, route }) => {
             Alert.alert(
                 'No Address',
                 'Please add an address in your profile to continue.',
-                [{ text: 'Go to Profile', onPress: () => navigation.navigate('Profile') }]
+                [{ text: 'Go to Profile', onPress: () => navigation.navigate('Main', { tabIndex: 4 }) }]
             );
             return;
         }
@@ -140,7 +140,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                             </Text>
                             <TouchableOpacity
                                 style={styles.addAddressButton}
-                                onPress={() => navigation.navigate('Profile')}
+                                onPress={() => navigation.navigate('Main', { tabIndex: 4 })}
                             >
                                 <Text style={styles.addAddressText}>Go to Profile →</Text>
                             </TouchableOpacity>

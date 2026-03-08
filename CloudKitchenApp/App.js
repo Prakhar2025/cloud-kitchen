@@ -35,6 +35,7 @@ import NotificationsScreen from './src/screens/User/NotificationsScreen';
 import InvoiceScreen from './src/screens/User/InvoiceScreen';
 import OrderSuccessScreen from './src/screens/User/OrderSuccessScreen';
 import CategoryScreen from './src/screens/User/CategoryScreen';
+import ForgotPasswordScreen from './src/screens/Auth/ForgotPasswordScreen';
 
 // Delivery Screens
 import DeliveryDashboardScreen from './src/screens/Delivery/DeliveryDashboardScreen';
@@ -283,7 +284,7 @@ const tabStyles = StyleSheet.create({
 // =============================================================================
 
 const AppNavigator = () => {
-    const { isAuthenticated, isGuest, isLoading } = useAuth();
+    const { isAuthenticated, isGuest, isLoading, user } = useAuth();
 
     // Show loading screen while checking auth status
     if (isLoading) {
@@ -300,7 +301,7 @@ const AppNavigator = () => {
         >
             {(isAuthenticated || isGuest) ? (
                 // Role-based routing
-                useAuth().user?.role === 'delivery' ? (
+                user?.role === 'delivery' ? (
                     // Delivery Stack
                     <>
                         <Stack.Screen name="DeliveryMain" component={DeliveryTabs} />
@@ -316,6 +317,7 @@ const AppNavigator = () => {
                         <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
                         <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false, animation: 'slide_from_bottom' }} />
                     </>
                 )
             ) : (
@@ -323,6 +325,7 @@ const AppNavigator = () => {
                 <>
                     <Stack.Screen name="Login" component={LoginScreen} />
                     <Stack.Screen name="SignUp" component={SignUpScreen} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false, animation: 'slide_from_bottom' }} />
                 </>
             )}
         </Stack.Navigator>

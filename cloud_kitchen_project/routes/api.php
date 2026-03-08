@@ -55,6 +55,11 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])
         ->name('api.v1.login');
 
+    // Forgot Password
+    // POST /api/v1/forgot-password
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->name('api.v1.forgot-password');
+
     // Menu (public — guests can browse without token)
     // GET /api/v1/user/menu
     Route::get('/user/menu', [MenuController::class, 'index'])->name('api.v1.user.menu.index');
