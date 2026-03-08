@@ -103,6 +103,16 @@ class AuthController extends Controller
                     ->mixedCase()  // Requires upper and lowercase
                     ->numbers(),    // Requires at least one number
             ],
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+            ],
+            'role' => [
+                'required',
+                'string',
+                'in:user,delivery',
+            ],
         ], [
             // Custom error messages for better user experience
             'name.required' => 'Please provide your full name.',
@@ -113,6 +123,9 @@ class AuthController extends Controller
             'password.required' => 'Password is required.',
             'password.confirmed' => 'Password confirmation does not match.',
             'password.min' => 'Password must be at least 8 characters.',
+            'phone.required' => 'Phone number is required.',
+            'role.required' => 'Please select a role.',
+            'role.in' => 'Invalid role selected.',
         ]);
 
         // Return validation errors if validation fails
@@ -133,6 +146,8 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => strtolower($request->email), // Normalize email to lowercase
+                'phone' => $request->phone,
+                'role' => $request->role,
                 'password' => Hash::make($request->password),
             ]);
         } catch (\Exception $e) {

@@ -50,6 +50,8 @@ const SignUpScreen = ({ navigation }) => {
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [role, setRole] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [errors, setErrors] = useState({});
@@ -61,6 +63,7 @@ const SignUpScreen = ({ navigation }) => {
 
     // Refs for input focus management
     const emailRef = useRef(null);
+    const phoneRef = useRef(null);
     const passwordRef = useRef(null);
     const confirmPasswordRef = useRef(null);
 
@@ -108,6 +111,18 @@ const SignUpScreen = ({ navigation }) => {
             newErrors.email = 'Please enter a valid email address';
         }
 
+        // Phone validation
+        if (!phone.trim()) {
+            newErrors.phone = 'Phone number is required';
+        } else if (phone.trim().length < 10) {
+            newErrors.phone = 'Please enter a valid phone number';
+        }
+
+        // Role validation
+        if (!role) {
+            newErrors.role = 'Please select a role';
+        }
+
         // Password validation
         if (!password) {
             newErrors.password = 'Password is required';
@@ -142,6 +157,22 @@ const SignUpScreen = ({ navigation }) => {
         setEmail(value);
         if (errors.email) {
             setErrors((prev) => ({ ...prev, email: null }));
+        }
+        if (generalError) setGeneralError('');
+    };
+
+    const handlePhoneChange = (value) => {
+        setPhone(value);
+        if (errors.phone) {
+            setErrors((prev) => ({ ...prev, phone: null }));
+        }
+        if (generalError) setGeneralError('');
+    };
+
+    const handleRoleChange = (selectedRole) => {
+        setRole(selectedRole);
+        if (errors.role) {
+            setErrors((prev) => ({ ...prev, role: null }));
         }
         if (generalError) setGeneralError('');
     };
@@ -181,6 +212,8 @@ const SignUpScreen = ({ navigation }) => {
             const result = await register({
                 name: name.trim(),
                 email: email.trim(),
+                phone: phone.trim(),
+                role: role,
                 password: password,
                 password_confirmation: confirmPassword,
             });
@@ -310,9 +343,45 @@ const SignUpScreen = ({ navigation }) => {
                                 autoCapitalize="none"
                                 autoCorrect={false}
                                 returnKeyType="next"
+                                onSubmitEditing={() => phoneRef.current?.focus()}
+                                editable={!isSubmitting}
+                            />
+
+                            {/* Phone Input */}
+                            <CustomInput
+                                ref={phoneRef}
+                                placeholder="Mobile Number"
+                                value={phone}
+                                onChangeText={handlePhoneChange}
+                                error={errors.phone}
+                                icon="📱"
+                                keyboardType="phone-pad"
+                                returnKeyType="next"
                                 onSubmitEditing={() => passwordRef.current?.focus()}
                                 editable={!isSubmitting}
                             />
+
+                            {/* Role Selection */}
+                            <View style={styles.roleContainer}>
+                                <Text style={styles.roleLabel}>Register As</Text>
+                                <View style={styles.roleOptions}>
+                                    <TouchableOpacity
+                                        style={[styles.roleOption, role === 'user' && styles.roleOptionActive]}
+                                        onPress={() => handleRoleChange('user')}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Text style={[styles.roleOptionText, role === 'user' && styles.roleOptionTextActive]}>Customer</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.roleOption, role === 'delivery' && styles.roleOptionActive]}
+                                        onPress={() => handleRoleChange('delivery')}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Text style={[styles.roleOptionText, role === 'delivery' && styles.roleOptionTextActive]}>Delivery Partner</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                {errors.role ? <Text style={styles.roleErrorText}>{errors.role}</Text> : null}
+                            </View>
 
                             {/* Password Input */}
                             <CustomInput
@@ -485,6 +554,48 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.error,
         fontWeight: '500',
+    },
+    roleContainer: {
+        marginBottom: 16,
+    },
+    roleLabel: {
+        fontSize: 14,
+        color: Colors.TEXT.secondary,
+        marginBottom: 8,
+        marginLeft: 4,
+        fontWeight: '500',
+    },
+    roleOptions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    roleOption: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        alignItems: 'center',
+        backgroundColor: '#FAFAFA',
+    },
+    roleOptionActive: {
+        borderColor: Colors.primary,
+        backgroundColor: Colors.PRIMARY.light + '10',
+    },
+    roleOptionText: {
+        fontSize: 14,
+        color: Colors.TEXT.secondary,
+        fontWeight: '500',
+    },
+    roleOptionTextActive: {
+        color: Colors.primary,
+        fontWeight: '700',
+    },
+    roleErrorText: {
+        color: Colors.error,
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
     buttonContainer: {
         marginTop: 8,
