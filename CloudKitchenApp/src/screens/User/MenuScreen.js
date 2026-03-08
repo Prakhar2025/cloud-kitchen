@@ -20,6 +20,7 @@ const MenuScreen = ({ navigation }) => {
     const [banners, setBanners] = useState([]);
     const [searchText, setSearchText] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [vegFilter, setVegFilter] = useState('all');
     const [selectedFood, setSelectedFood] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const scrollX = useRef(new Animated.Value(0)).current;
@@ -206,9 +207,15 @@ const MenuScreen = ({ navigation }) => {
         </View>
     );
 
-    const filteredCategories = selectedCategory
+    const filteredCategories = (selectedCategory
         ? categories.filter(cat => cat.id === selectedCategory)
-        : categories;
+        : categories
+    ).map(cat => ({
+        ...cat,
+        food_items: vegFilter === 'all'
+            ? cat.food_items
+            : (cat.food_items || []).filter(f => f.type === vegFilter),
+    })).filter(cat => cat.food_items && cat.food_items.length > 0);
 
     if (loading && categories.length === 0) {
         return (
@@ -362,29 +369,70 @@ const MenuScreen = ({ navigation }) => {
                 refreshing={loading}
                 onRefresh={fetchMenu}
                 ListHeaderComponent={
-                    banners.length > 0 ? (
-                        <View style={styles.bannersSection}>
-                            <ScrollView
-                                horizontal
-                                pagingEnabled
-                                showsHorizontalScrollIndicator={false}
-                                decelerationRate="fast"
-                                snapToInterval={BANNER_WIDTH + 16}
-                                snapToAlignment="start"
-                                contentContainerStyle={styles.bannerScrollContent}
-                            >
-                                {banners.map((banner, index) => (
-                                    <View key={banner.id} style={styles.bannerContainer}>
-                                        <Image
-                                            source={{ uri: banner.image_url }}
-                                            style={styles.bannerImage}
-                                            resizeMode="cover"
-                                        />
-                                    </View>
-                                ))}
-                            </ScrollView>
+                    <View>
+                        {banners.length > 0 && (
+                            <View style={styles.bannersSection}>
+                                <ScrollView
+                                    horizontal
+                                    pagingEnabled
+                                    showsHorizontalScrollIndicator={false}
+                                    decelerationRate="fast"
+                                    snapToInterval={BANNER_WIDTH + 16}
+                                    snapToAlignment="start"
+                                    contentContainerStyle={styles.bannerScrollContent}
+                                >
+                                    {banners.map((banner) => (
+                                        <View key={banner.id} style={styles.bannerContainer}>
+                                            <Image
+                                                source={{ uri: banner.image_url }}
+                                                style={styles.bannerImage}
+                                                resizeMode="cover"
+                                            />
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+
+                        {/* Veg / Non-Veg Filter Pills — below hero banner */}
+                        <View style={styles.vegFilterContainer}>
+                            {['all', 'veg', 'non-veg'].map((filter) => {
+                                const isActive = vegFilter === filter;
+                                const isVeg = filter === 'veg';
+                                const isNonVeg = filter === 'non-veg';
+                                const label = filter === 'all' ? 'All' : filter === 'veg' ? 'Veg' : 'Non-Veg';
+                                const activeColor = isVeg ? '#2E7D32' : isNonVeg ? '#C62828' : Colors.text;
+                                return (
+                                    <TouchableOpacity
+                                        key={filter}
+                                        style={[
+                                            styles.vegFilterPill,
+                                            isActive && { backgroundColor: activeColor, borderColor: activeColor },
+                                            !isActive && {
+                                                borderColor: isVeg ? '#2E7D32' : isNonVeg ? '#C62828' : '#ccc',
+                                            },
+                                        ]}
+                                        onPress={() => setVegFilter(filter)}
+                                        activeOpacity={0.8}
+                                    >
+                                        {(filter !== 'all') && (
+                                            <View style={[
+                                                styles.vegDotPill,
+                                                { backgroundColor: isActive ? '#fff' : (isVeg ? '#2E7D32' : '#C62828') }
+                                            ]} />
+                                        )}
+                                        <Text style={[
+                                            styles.vegFilterLabel,
+                                            isActive ? { color: '#fff', fontWeight: '700' } : {
+                                                color: isVeg ? '#2E7D32' : isNonVeg ? '#C62828' : Colors.text,
+                                                fontWeight: '600',
+                                            },
+                                        ]}>{label}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
-                    ) : null
+                    </View>
                 }
             />
 
@@ -397,12 +445,14 @@ const MenuScreen = ({ navigation }) => {
             />
 
             {/* Cart Toast — brief "Added to cart ✓" overlay */}
-            {!!toastMessage && (
-                <View style={styles.toast} pointerEvents="none">
-                    <Text style={styles.toastText}>{toastMessage}</Text>
-                </View>
-            )}
-        </SafeAreaView>
+            {
+                !!toastMessage && (
+                    <View style={styles.toast} pointerEvents="none">
+                        <Text style={styles.toastText}>{toastMessage}</Text>
+                    </View>
+                )
+            }
+        </SafeAreaView >
     );
 };
 
@@ -551,6 +601,33 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 8,
         fontSize: 16,
+    },
+    vegFilterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 8,
+    },
+    vegFilterPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: '#ccc',
+        backgroundColor: '#fff',
+    },
+    vegDotPill: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    vegFilterLabel: {
+        fontSize: 13,
+        fontWeight: '600',
     },
     listContent: {
         padding: 16,
