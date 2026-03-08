@@ -6,15 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserAddress extends Model
 {
-    protected $fillable = [
+   protected $fillable = [
         'user_id',
         'label',
         'name',
         'phone',
-        'house_no',
-        'building_name',
-        'street_name',
-        'landmark',
         'address',
         'city',
         'pincode',
@@ -22,6 +18,7 @@ class UserAddress extends Model
         'latitude',
         'longitude',
     ];
+
 
     public function user()
 {

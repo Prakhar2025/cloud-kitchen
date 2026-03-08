@@ -23,21 +23,36 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+  public function store(LoginRequest $request): RedirectResponse
+{
+    $request->authenticate();
 
-        $request->session()->regenerate();
+    $request->session()->regenerate();
 
-        $request->session()->regenerate();
+    $user = auth()->user();
 
-        if (auth()->user()->is_admin) {
-            return redirect()->route('admin.dashboard');
-        }
+    // 🚚 DELIVERY APPROVAL CHECK
+    if ($user->role === 'delivery' && !$user->is_approved) {
 
-        return redirect()->route('menu');
+        Auth::logout();
 
+        return redirect()->route('login')
+            ->with('error', 'Your delivery account is pending admin approval.');
     }
+
+    // 👑 ADMIN
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    // 🚚 DELIVERY
+    if ($user->role === 'delivery') {
+        return redirect()->route('delivery.dashboard');
+    }
+
+    // 👤 NORMAL USER
+    return redirect()->route('menu');
+}
 
     /**
      * Destroy an authenticated session.

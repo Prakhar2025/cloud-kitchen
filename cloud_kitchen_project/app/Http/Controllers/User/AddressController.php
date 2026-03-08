@@ -33,13 +33,13 @@ class AddressController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'label'        => 'nullable|string',
-            'name'         => 'required|string',
-            'phone'        => 'required|string',
-            'city'         => 'required|string',
-            'pincode'      => 'required|string',
-            'latitude'     => 'required',
-            'longitude'    => 'required',
+            'label' => 'nullable|string',
+            'name' => 'required|string',
+            'phone' => 'required|string',
+            'city' => 'required|string',
+            'pincode' => 'required|string',
+            'latitude' => 'required',
+            'longitude' => 'required',
         ]);
 
         // 🔥 Build full address like Swiggy
@@ -51,19 +51,15 @@ class AddressController extends Controller
         ]));
 
         $address = UserAddress::create([
-            'user_id'        => auth()->id(),
-            'label'          => $request->label,
-            'name'           => $request->name,
-            'phone'          => $request->phone,
-            'house_no'       => $request->house_no,
-            'building_name'  => $request->building_name,
-            'street_name'    => $request->street_name,
-            'landmark'       => $request->landmark,
-            'address'        => $fullAddress,
-            'city'           => $request->city,
-            'pincode'        => $request->pincode,
-            'latitude'       => $request->latitude,
-            'longitude'      => $request->longitude,
+            'user_id' => auth()->id(),
+            'label' => $request->label,
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'city' => $request->city,
+            'pincode' => $request->pincode,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         session(['checkout.address_id' => $address->id]);

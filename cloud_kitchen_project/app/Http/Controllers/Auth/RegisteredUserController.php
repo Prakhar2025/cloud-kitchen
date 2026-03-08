@@ -28,24 +28,38 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+  public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => ['required','string','max:255'],
+        'email' => ['required','email','max:255','unique:users'],
+        'phone' => ['required','string','max:10'],
+        'role' => ['required'],
+        'password' => ['required','confirmed',Rules\Password::defaults()],
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'phone' => $request->phone,
+        'role' => $request->role,
+        'is_approved' => $request->role === 'delivery' ? 0 : 1,
+        'password' => Hash::make($request->password),
+    ]);
 
-        event(new Registered($user));
+    event(new Registered($user));
 
-        Auth::login($user);
+    // 🚚 DELIVERY PARTNER REGISTRATION
+    if($user->role === 'delivery'){
 
-        return redirect(RouteServiceProvider::HOME);
+        return redirect()->route('login')
+        ->with('success','Account created successfully. Please wait for admin approval.');
+
     }
+
+    // 👤 NORMAL USER LOGIN
+    Auth::login($user);
+
+    return redirect(RouteServiceProvider::HOME);
+}
 }

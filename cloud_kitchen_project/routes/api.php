@@ -130,6 +130,26 @@ Route::prefix('v1')->group(function () {
         // POST /api/v1/user/profile/update
         Route::post('/user/profile/update', [ProfileController::class, 'update'])->name('api.v1.user.profile.update');
 
+        // ====================================================================
+        // Delivery Module Routes
+        // ====================================================================
+
+        // GET /api/v1/delivery/dashboard
+        Route::get('/delivery/dashboard', [\App\Http\Controllers\Api\DeliveryController::class, 'dashboard'])
+            ->name('api.v1.delivery.dashboard');
+        
+        // GET /api/v1/delivery/history
+        Route::get('/delivery/history', [\App\Http\Controllers\Api\DeliveryController::class, 'history'])
+            ->name('api.v1.delivery.history');
+        
+        // POST /api/v1/delivery/orders/{id}/status
+        Route::post('/delivery/orders/{id}/status', [\App\Http\Controllers\Api\DeliveryController::class, 'updateStatus'])
+            ->name('api.v1.delivery.orders.update-status');
+        
+        // POST /api/v1/delivery/location
+        Route::post('/delivery/location', [\App\Http\Controllers\Api\DeliveryController::class, 'updateLocation'])
+            ->name('api.v1.delivery.location.update');
+
     });
 });
 

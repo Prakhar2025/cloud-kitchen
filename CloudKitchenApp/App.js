@@ -36,6 +36,11 @@ import InvoiceScreen from './src/screens/User/InvoiceScreen';
 import OrderSuccessScreen from './src/screens/User/OrderSuccessScreen';
 import CategoryScreen from './src/screens/User/CategoryScreen';
 
+// Delivery Screens
+import DeliveryDashboardScreen from './src/screens/Delivery/DeliveryDashboardScreen';
+import DeliveryHistoryScreen from './src/screens/Delivery/DeliveryHistoryScreen';
+import DeliveryProfileScreen from './src/screens/Delivery/DeliveryProfileScreen';
+
 // Styles
 import Colors from './src/styles/colors';
 
@@ -151,6 +156,79 @@ const UserTabs = ({ navigation, route }) => {
     );
 };
 
+// =============================================================================
+// Delivery Tab Navigator
+// =============================================================================
+
+const DELIVERY_TAB_CONFIG = [
+    { name: 'Dashboard', icon: 'bicycle', iconOff: 'bicycle-outline', component: DeliveryDashboardScreen },
+    { name: 'History', icon: 'list', iconOff: 'list-outline', component: DeliveryHistoryScreen },
+    { name: 'Profile', icon: 'person', iconOff: 'person-outline', component: DeliveryProfileScreen },
+];
+
+const DeliveryTabs = ({ navigation, route }) => {
+    const initialIndex = route?.params?.tabIndex ?? 0;
+    const [activeIndex, setActiveIndex] = React.useState(initialIndex);
+    const pagerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        const idx = route?.params?.tabIndex;
+        if (idx !== undefined && idx !== activeIndex) {
+            pagerRef.current?.setPage(idx);
+            setActiveIndex(idx);
+        }
+    }, [route?.params?.tabIndex]);
+
+    const goToTab = (index) => {
+        pagerRef.current?.setPage(index);
+        setActiveIndex(index);
+    };
+
+    return (
+        <View style={{ flex: 1 }}>
+            <PagerView
+                ref={pagerRef}
+                style={{ flex: 1 }}
+                initialPage={0}
+                onPageSelected={(e) => setActiveIndex(e.nativeEvent.position)}
+                overdrag={false}
+            >
+                {DELIVERY_TAB_CONFIG.map((tab) => {
+                    const Screen = tab.component;
+                    return (
+                        <View key={tab.name} style={{ flex: 1 }}>
+                            <Screen navigation={navigation} route={{ name: tab.name, params: {} }} />
+                        </View>
+                    );
+                })}
+            </PagerView>
+
+            <View style={tabStyles.tabBar}>
+                {DELIVERY_TAB_CONFIG.map((tab, index) => {
+                    const isActive = index === activeIndex;
+                    return (
+                        <TouchableOpacity
+                            key={tab.name}
+                            style={tabStyles.tabItem}
+                            onPress={() => goToTab(index)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons
+                                name={isActive ? tab.icon : tab.iconOff}
+                                size={24}
+                                color={isActive ? Colors.primary : '#9e9e9e'}
+                            />
+                            <Text style={[tabStyles.tabLabel, isActive && tabStyles.tabLabelActive]}>
+                                {tab.name}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+};
+
 const tabStyles = StyleSheet.create({
     tabBar: {
         flexDirection: 'row',
@@ -221,19 +299,25 @@ const AppNavigator = () => {
             }}
         >
             {(isAuthenticated || isGuest) ? (
-                // Main stack — shown for both authenticated users & guests
-                // Protected screens (Cart, Orders, Profile, Notifications) handle
-                // their own guest gate via <GuestPrompt> component
-                <>
-                    <Stack.Screen name="Main" component={UserTabs} />
-                    <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
-                    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ animation: 'slide_from_bottom' }} />
-                    <Stack.Screen name="CartConfirmation" component={CartConfirmationScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
-                    <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
-                </>
+                // Role-based routing
+                useAuth().user?.role === 'delivery' ? (
+                    // Delivery Stack
+                    <>
+                        <Stack.Screen name="DeliveryMain" component={DeliveryTabs} />
+                    </>
+                ) : (
+                    // Normal User Stack
+                    <>
+                        <Stack.Screen name="Main" component={UserTabs} />
+                        <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
+                        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ animation: 'slide_from_bottom' }} />
+                        <Stack.Screen name="CartConfirmation" component={CartConfirmationScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
+                        <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
+                    </>
+                )
             ) : (
                 // Fallback — only reached during initial app load (isLoading=true covers this)
                 <>

@@ -16,6 +16,8 @@ use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Admin\FestivalBannerController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\User\RatingController;
+use App\Http\Controllers\Delivery\DashboardController as DeliveryDashboardController;
+use App\Http\Controllers\Admin\UserController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -198,7 +200,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-   
+
     Route::get('/user/menu/category/{category}', [MenuController::class, 'category'])
         ->name('user.menu.category');
 
@@ -235,13 +237,13 @@ Route::prefix('admin/reports')->middleware('auth')->group(function () {
     Route::get('/yearly', [ReportController::class, 'yearly'])
         ->name('admin.reports.yearly');
 
-    Route::get('/admin/reports/weekly/pdf',[ReportController::class, 'weeklyPdf'])
+    Route::get('/admin/reports/weekly/pdf', [ReportController::class, 'weeklyPdf'])
         ->name('admin.reports.weekly.pdf');
-    
-    Route::get('/admin/reports/monthly/pdf',[ReportController::class, 'monthlyPdf'])
+
+    Route::get('/admin/reports/monthly/pdf', [ReportController::class, 'monthlyPdf'])
         ->name('admin.reports.monthly.pdf');
-    
-    Route::get('/admin/reports/yearly/pdf',[ReportController::class,'yearlyPdf'])
+
+    Route::get('/admin/reports/yearly/pdf', [ReportController::class, 'yearlyPdf'])
         ->name('admin.reports.yearly.pdf');
 
 });
@@ -249,12 +251,12 @@ Route::prefix('admin/reports')->middleware('auth')->group(function () {
 Route::get('/food/{food}', [MenuController::class, 'foodQuickView'])
     ->name('food.quickview');
 
- Route::get('/user/menu', [MenuController::class, 'index'])->name('menu');
+Route::get('/user/menu', [MenuController::class, 'index'])->name('menu');
 
- 
+
 Route::get('/menu/category/{category}', [MenuController::class, 'category'])
     ->name('menu.category');
-    
+
 Route::get('/category/{category}', [MenuController::class, 'category'])
     ->name('category.view');
 
@@ -262,5 +264,58 @@ Route::post('/rating/store', [RatingController::class, 'store'])
     ->name('rating.store')
     ->middleware('auth');
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/delivery/dashboard', [DeliveryDashboardController::class, 'index'])
+        ->name('delivery.dashboard');
+
+
+});
+
+Route::post(
+    '/admin/orders/{id}/assign-delivery',
+    [AdminOrderController::class, 'assignDelivery']
+)->name('admin.orders.assignDelivery');
+
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::get(
+        '/delivery/dashboard',
+        [DeliveryDashboardController::class, 'index']
+    )
+        ->name('delivery.dashboard');
+
+    Route::post(
+        '/delivery/orders/{id}/update-status',
+        [DeliveryDashboardController::class, 'updateStatus']
+    )
+        ->name('delivery.orders.updateStatus');
+
+
+    Route::get('/delivery/my-orders', [DeliveryDashboardController::class, 'myOrders'])
+        ->name('delivery.myOrders');
+
+    Route::post('/delivery/update-location',[DeliveryDashboardController::class,'updateLocation'])
+        ->name('delivery.location.update');
+});
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/admin/delivery-requests', [UserController::class, 'deliveryRequests'])
+        ->name('admin.delivery.requests');
+
+    Route::post('/admin/approve-delivery/{id}', [UserController::class, 'approveDelivery'])
+        ->name('admin.delivery.approve');
+
+    Route::post(   '/admin/delivery/suspend/{id}', [UserController::class, 'suspendDelivery']
+        )->name('admin.delivery.suspend');
+
+    Route::post( '/admin/delivery/activate/{id}', [UserController::class, 'activateDelivery']
+        )->name('admin.delivery.activate');
+
+    Route::delete(  '/admin/delivery/delete/{id}',   [UserController::class, 'deleteDelivery']
+      )->name('admin.delivery.delete');
+
+});
 
 require __DIR__ . '/auth.php';

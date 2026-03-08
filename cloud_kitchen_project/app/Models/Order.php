@@ -41,5 +41,8 @@ class Order extends Model
         return $this->hasMany(\App\Models\Rating::class);
     }
 
+     public function deliveryBoy(){
+        return $this->belongsTo(User::class,"delivery_boy_id");
+    }
 
 }

@@ -107,8 +107,14 @@
 </head>
 <body>
 
+
 <div class="login-wrapper row g-0">
 
+@if(session('success'))
+<div class="alert alert-success">
+{{ session('success') }}
+</div>
+@endif
     <!-- LEFT IMAGE -->
     <div class="col-md-6 login-left">
         <div class="login-overlay">

@@ -125,6 +125,11 @@
                class="{{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 📦 Orders
             </a>
+
+             <a href="{{ route('admin.delivery.requests') }}"
+                    class="{{ request()->routeIs('admin.delivery.requests') ? 'active' : '' }}">
+                    🚚 Delivery Requests
+                </a>
         </div>
 
         <!-- 👉 MAIN CONTENT -->

@@ -156,6 +156,37 @@
                 @enderror
             </div>
 
+             <!-- Contact Number -->
+            <div class="form-group">
+              <i class="bi bi-phone input-icon"></i>
+                <input type="number"
+                       name="phone"
+                       value="{{ old('phone') }}"
+                       class="form-control @error('phone') is-invalid @enderror"
+                       placeholder="Mobile Number"
+                       required>
+                @error('phone')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- Register As -->
+<div class="form-group">
+    <i class="bi bi-person-badge input-icon"></i>
+
+    <select name="role"
+            class="form-control"
+            required
+            style="padding-left:42px;">
+
+        <option value="">Register As</option>
+        <option value="user">Customer</option>
+        <option value="delivery">Delivery Partner</option>
+
+    </select>
+
+</div>
+
             <!-- Password -->
             <div class="form-group">
                 <i class="bi bi-lock input-icon"></i>

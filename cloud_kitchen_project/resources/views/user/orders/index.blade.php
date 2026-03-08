@@ -2,171 +2,207 @@
 
 @section('content')
 
+<style>
+
+.order-status{
+    font-size:12px;
+    padding:6px 12px;
+    border-radius:20px;
+    line-height:1;
+    height:auto;
+    display:inline-flex;1
+    align-items:center;
+}
+
+.order-card{
+    border-radius:10px;
+}
+
+.delivery-box{
+    background:#f8f9fa;
+    border-radius:8px;
+}
+
+</style>
+
 <h3 class="mb-4">My Orders</h3>
 
-@if($orders->count() > 0)
+@if($orders->count())
 
-    @foreach($orders as $order)
-        <div class="card mb-4">
+@foreach($orders as $order)
 
-            {{-- CARD HEADER --}}
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Order #{{ $order->id }}</strong><br>
-                    <small class="text-muted">
-                        {{ $order->created_at->format('d M Y, h:i A') }}
-                    </small>
-                </div>
+<div class="card mb-4 order-card">
 
-                <div class="d-flex gap-2 align-items-center">
+<div class="card-header d-flex justify-content-between align-items-center">
 
-                    {{-- ORDER STATUS --}}
-                    <span class="badge 
-                        @if($order->status == 'pending') bg-warning
-                        @elseif($order->status == 'accepted') bg-primary
-                        @elseif($order->status == 'preparing') bg-info
-                        @elseif($order->status == 'delivered') bg-success
-                        @elseif($order->status == 'cancelled') bg-danger
-                        @else bg-secondary
-                        @endif">
-                        {{ ucfirst($order->status) }}
-                    </span>
+<div>
+<strong>Order #{{ $order->id }}</strong><br>
+<small class="text-muted">
+{{ $order->created_at->format('d M Y h:i A') }}
+</small>
+</div>
 
-                    {{-- CANCEL BUTTON --}}
-                    @if($order->status === 'pending')
-                        <form method="POST"
-                              action="{{ route('user.order.cancel', $order->id) }}"
-                              onsubmit="return confirm('Are you sure you want to cancel this order?')">
-                            @csrf
-                            <button class="btn btn-sm btn-danger">
-                                Cancel
-                            </button>
-                        </form>
-                    @endif
+<span class="badge order-status
+@if($order->status=='pending') bg-warning
+@elseif($order->status=='accepted') bg-primary
+@elseif($order->status=='preparing') bg-info
+@elseif($order->status=='out_for_delivery') bg-primary
+@elseif($order->status=='delivered') bg-success
+@elseif($order->status=='cancelled') bg-danger
+@endif">
 
-                </div>
-            </div>
+{{ ucwords(str_replace('_',' ',$order->status)) }}
 
-            {{-- CARD BODY --}}
-            <div class="card-body">
+</span>
 
-                <p class="mb-1">
-                    <strong>Total Amount:</strong> ₹ {{ $order->total_amount }}
-                </p>
+</div>
 
-                <p class="mb-1">
-                    <strong>Payment Method:</strong>
-                    {{ strtoupper($order->payment_method) }}
-                </p>
 
-                <p class="mb-3">
-                    <strong>Payment Status:</strong>
-                    <span class="badge {{ $order->payment_status == 'paid' ? 'bg-success' : 'bg-warning' }}">
-                        {{ ucfirst($order->payment_status) }}
-                    </span>
-                </p>
+<div class="card-body">
 
-                {{-- ORDER ITEMS --}}
-                <h6>Order Items:</h6>
-                <ul class="mb-3">
-                    @foreach($order->items as $item)
-                        <li>
-                            {{ $item->food_name }}
-                            — Qty: {{ $item->quantity }}
-                            — ₹ {{ $item->price }}
-                        </li>
-                    @endforeach
-                </ul>
+<p class="mb-1">
+<strong>Total Amount:</strong> ₹ {{ $order->total_amount }}
+</p>
+ 
+<p class="mb-1">
+<strong>Payment:</strong> {{ strtoupper($order->payment_method) }}
+</p>
 
-                {{-- ACTION BUTTONS --}}
-                <div class="d-flex gap-2 flex-wrap">
+<p class="mb-3">
+<strong>Payment Status:</strong>
 
-                    <a href="{{ route('user.order.invoice', $order->id) }}"
-                       class="btn btn-sm btn-outline-primary">
-                        View Invoice
-                    </a>
+<span class="badge {{ $order->payment_status=='paid'?'bg-success':'bg-warning' }}">
+{{ ucfirst($order->payment_status) }}
+</span>
 
-                    {{-- RATE ORDER (ONLY AFTER DELIVERY) --}}
-                    @if($order->status === 'delivered')
+</p>
 
-                        @if(!$order->rating)
-                            <button class="btn btn-sm btn-warning"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#rateOrderModal{{ $order->id }}">
-                                ⭐ Rate Order
-                            </button>
-                        @else
-                            <span class="badge bg-success">
-                                Rated: {{ $order->rating->stars }} ⭐
-                            </span>
-                        @endif
 
-                    @endif
+{{-- DELIVERY PARTNER --}}
+@if($order->deliveryBoy)
 
-                </div>
+<div class="border p-3 mb-3 delivery-box">
 
-            </div>
-        </div>
+<h6 class="mb-2">🚚 Delivery Partner</h6>
 
-        {{-- ================= RATE ORDER MODAL ================= --}}
-        @if($order->status === 'delivered' && !$order->rating)
-        <div class="modal fade" id="rateOrderModal{{ $order->id }}" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
+<p class="mb-1">
+<strong>Name:</strong>
+{{ $order->deliveryBoy->name }}
+</p>
 
-                    <form method="POST" action="{{ route('user.order.rate', $order->id) }}">
-                        @csrf
+@if($order->deliveryBoy->phone)
 
-                        <div class="modal-header">
-                            <h5 class="modal-title">Rate Order #{{ $order->id }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
+<p class="mb-2">
 
-                        <div class="modal-body">
+<strong>Phone:</strong>
 
-                            {{-- STAR RATING --}}
-                            <label class="form-label">Rating</label>
-                            <select name="stars" class="form-select mb-3" required>
-                                <option value="">Select Rating</option>
-                                <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                                <option value="4">⭐⭐⭐⭐ Good</option>
-                                <option value="3">⭐⭐⭐ Average</option>
-                                <option value="2">⭐⭐ Poor</option>
-                                <option value="1">⭐ Very Bad</option>
-                            </select>
+<a href="tel:{{ $order->deliveryBoy->phone }}">
+{{ $order->deliveryBoy->phone }}
+</a>
 
-                            {{-- REVIEW --}}
-                            <label class="form-label">Review (optional)</label>
-                            <textarea name="review"
-                                      class="form-control"
-                                      rows="3"
-                                      placeholder="Write your experience..."></textarea>
+</p>
 
-                        </div>
+@endif
 
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" data-bs-dismiss="modal">
-                                Cancel
-                            </button>
-                            <button class="btn btn-success">
-                                Submit Rating
-                            </button>
-                        </div>
 
-                    </form>
+@if($order->deliveryBoy->latitude)
 
-                </div>
-            </div>
-        </div>
-        @endif
+<a target="_blank"
+href="https://www.google.com/maps?q={{ $order->deliveryBoy->latitude }},{{ $order->deliveryBoy->longitude }}"
+class="btn btn-sm btn-primary">
 
-    @endforeach
+Track Delivery
+
+</a>
+
+@endif
+
+</div>
 
 @else
-    <p>You have not placed any orders yet.</p>
-    <a href="{{ route('menu') }}" class="btn btn-primary">
-        Order Now
-    </a>
+
+@if($order->status!='cancelled')
+
+<div class="alert alert-secondary p-2">
+
+🚚 Delivery partner will be assigned soon.
+
+</div>
+
+@endif
+
+@endif
+
+
+
+<h6 class="mb-2">Order Items</h6>
+
+<ul class="mb-3">
+
+@foreach($order->items as $item)
+
+<li>
+
+{{ $item->food_name }}
+
+— Qty: {{ $item->quantity }}
+
+— ₹ {{ $item->price }}
+
+</li>
+
+@endforeach
+
+</ul>
+
+
+<div class="d-flex gap-2 flex-wrap">
+
+<a href="{{ route('user.order.invoice',$order->id) }}"
+class="btn btn-outline-primary btn-sm">
+
+View Invoice
+
+</a>
+
+
+@if($order->status=='pending')
+
+<form method="POST"
+action="{{ route('user.order.cancel',$order->id) }}"
+style="display:inline">
+
+@csrf
+
+<button class="btn btn-danger btn-sm">
+
+Cancel
+
+</button>
+
+</form>
+
+@endif
+
+</div>
+
+</div>
+
+</div>
+
+@endforeach
+
+@else
+
+<p>You have not placed any orders yet.</p>
+
+<a href="{{ route('menu') }}"
+class="btn btn-primary">
+
+Order Now
+
+</a>
+
 @endif
 
 @endsection
