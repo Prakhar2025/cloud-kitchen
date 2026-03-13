@@ -15,9 +15,15 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::where('user_id', auth()->id())
-            ->with(['items.foodItem', 'address'])
+            ->with(['items.foodItem', 'address', 'ratings'])
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($order) {
+                $order->is_rated = $order->ratings
+                    ->where('user_id', auth()->id())
+                    ->isNotEmpty();
+                return $order;
+            });
 
         return response()->json([
             'success' => true,

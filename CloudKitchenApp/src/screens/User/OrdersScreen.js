@@ -155,12 +155,18 @@ const OrdersScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
                     {item.status === 'delivered' && (
-                        <TouchableOpacity
-                            onPress={() => openRatingModal(item)}
-                            style={styles.rateButton}
-                        >
-                            <Text style={styles.rateButtonText}>⭐ Rate Order</Text>
-                        </TouchableOpacity>
+                        item.is_rated ? (
+                            <View style={styles.ratedBadge}>
+                                <Text style={styles.ratedBadgeText}>✓ Rated</Text>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => openRatingModal(item)}
+                                style={styles.rateButton}
+                            >
+                                <Text style={styles.rateButtonText}>⭐ Rate</Text>
+                            </TouchableOpacity>
+                        )
                     )}
                 </View>
             </View>
@@ -392,6 +398,19 @@ const styles = StyleSheet.create({
     },
     rateButtonText: {
         color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    ratedBadge: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        backgroundColor: '#E8F5E9',
+        borderWidth: 1,
+        borderColor: '#2E7D32',
+    },
+    ratedBadgeText: {
+        color: '#2E7D32',
         fontSize: 12,
         fontWeight: '600',
     },

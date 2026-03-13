@@ -84,6 +84,8 @@ export const register = async (userData) => {
         const response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, {
             name: userData.name.trim(),
             email: userData.email.trim().toLowerCase(),
+            phone: userData.phone?.trim(),
+            role: userData.role,
             password: userData.password,
             password_confirmation: userData.password_confirmation,
         });

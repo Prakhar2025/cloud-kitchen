@@ -100,9 +100,7 @@ class AuthController extends Controller
                 'required',
                 'string',
                 'confirmed',  // Requires password_confirmation field
-                Password::min(8)  // Minimum 8 characters
-                    ->mixedCase()  // Requires upper and lowercase
-                    ->numbers(),    // Requires at least one number
+                Password::min(8),  // Minimum 8 characters only
             ],
             'phone' => [
                 'required',
