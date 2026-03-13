@@ -143,7 +143,6 @@ const ForgotPasswordScreen = ({ navigation }) => {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
-                            icon="mail-outline"
                         />
 
                         {error ? (
