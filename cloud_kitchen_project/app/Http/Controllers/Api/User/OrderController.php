@@ -15,7 +15,7 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::where('user_id', auth()->id())
-            ->with(['items.foodItem', 'address', 'ratings'])
+            ->with(['items.foodItem', 'address', 'ratings', 'deliveryBoy'])
             ->latest()
             ->get()
             ->map(function ($order) {

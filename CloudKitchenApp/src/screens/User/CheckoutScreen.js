@@ -20,12 +20,14 @@ import {
     ActivityIndicator,
     Alert,
     Platform,
+    Modal,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../styles/colors';
 import { placeOrder } from '../../api/order';
-import { getAddresses } from '../../api/user';
+import { getAddresses, addAddress } from '../../api/user';
 
 const CheckoutScreen = ({ navigation, route }) => {
     const { cartItems, subtotal } = route.params;
@@ -35,6 +37,18 @@ const CheckoutScreen = ({ navigation, route }) => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('cod'); // Default COD like web
+
+    // Add address modal state
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [savingAddress, setSavingAddress] = useState(false);
+    const [newAddress, setNewAddress] = useState({
+        name: '',
+        phone: '',
+        address_line1: '',
+        city: '',
+        state: '',
+        zip_code: ''
+    });
 
     // Total is just the subtotal (sum of item prices × qty) — same as web
     const totalAmount = subtotal;
@@ -51,6 +65,43 @@ const CheckoutScreen = ({ navigation, route }) => {
             setSelectedAddress(result.data[0]);
         }
         setLoading(false);
+    };
+
+    const handleAddNewAddress = async () => {
+        if (!newAddress.address_line1 || !newAddress.city || !newAddress.zip_code || !newAddress.name || !newAddress.phone) {
+            Alert.alert("Error", "Please fill required fields (Name, Phone, Address, City, Zip)");
+            return;
+        }
+
+        setSavingAddress(true);
+        const result = await addAddress(newAddress);
+        setSavingAddress(false);
+
+        if (result.success) {
+            Alert.alert("Success", "Address added successfully!");
+            // Reset form
+            setNewAddress({
+                name: '',
+                phone: '',
+                address_line1: '',
+                city: '',
+                state: '',
+                zip_code: ''
+            });
+            setShowAddModal(false);
+            
+            // Refresh addresses and select the new one
+            const updatedAddresses = await getAddresses();
+            if (updatedAddresses.success) {
+                setAddresses(updatedAddresses.data);
+                // The new address is usually the last one or we can find it by ID if returned
+                // For simplicity, find the one with the ID returned or just use the first if sorted by desc
+                const newlyAdded = updatedAddresses.data.find(a => a.id === result.data.id) || updatedAddresses.data[0];
+                setSelectedAddress(newlyAdded);
+            }
+        } else {
+            Alert.alert("Error", result.error || "Failed to add address");
+        }
     };
 
     const handlePlaceOrder = async () => {
@@ -129,8 +180,16 @@ const CheckoutScreen = ({ navigation, route }) => {
                 {/* ============================================================ */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeaderRow}>
-                        <Ionicons name="location-outline" size={20} color={Colors.primary} />
-                        <Text style={styles.sectionTitle}>Select Delivery Address</Text>
+                        <View style={styles.sectionHeaderTitleContainer}>
+                            <Ionicons name="location-outline" size={20} color={Colors.primary} />
+                            <Text style={styles.sectionTitle}>Select Delivery Address</Text>
+                        </View>
+                        <TouchableOpacity 
+                            onPress={() => setShowAddModal(true)}
+                            style={styles.headerAddButton}
+                        >
+                            <Text style={styles.headerAddButtonText}>+ Add New</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {addresses.length === 0 ? (
@@ -306,6 +365,105 @@ const CheckoutScreen = ({ navigation, route }) => {
                     </TouchableOpacity>
                 </View>
             )}
+            {/* ============================================================ */}
+            {/* Add Address Modal                                           */}
+            {/* ============================================================ */}
+            <Modal
+                visible={showAddModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowAddModal(false)}
+            >
+                <View style={styles.modalScrollOverlay}>
+                    <ScrollView contentContainerStyle={styles.modalScrollContent}>
+                        <View style={styles.modalInnerContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Add New Address</Text>
+                                <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                                    <Ionicons name="close" size={24} color={Colors.TEXT.secondary} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.formContainer}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>Full Name *</Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Enter full name"
+                                        value={newAddress.name}
+                                        onChangeText={t => setNewAddress({ ...newAddress, name: t })}
+                                    />
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>Phone Number *</Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Enter 10-digit number"
+                                        keyboardType="phone-pad"
+                                        value={newAddress.phone}
+                                        onChangeText={t => setNewAddress({ ...newAddress, phone: t })}
+                                    />
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>Address Line 1 *</Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="House no, Street, Area"
+                                        value={newAddress.address_line1}
+                                        onChangeText={t => setNewAddress({ ...newAddress, address_line1: t })}
+                                    />
+                                </View>
+
+                                <View style={styles.rowInputs}>
+                                    <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                                        <Text style={styles.inputLabel}>City *</Text>
+                                        <TextInput
+                                            style={styles.textInput}
+                                            placeholder="City"
+                                            value={newAddress.city}
+                                            onChangeText={t => setNewAddress({ ...newAddress, city: t })}
+                                        />
+                                    </View>
+                                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                                        <Text style={styles.inputLabel}>Zip Code *</Text>
+                                        <TextInput
+                                            style={styles.textInput}
+                                            placeholder="6-digit PIN"
+                                            keyboardType="number-pad"
+                                            value={newAddress.zip_code}
+                                            onChangeText={t => setNewAddress({ ...newAddress, zip_code: t })}
+                                        />
+                                    </View>
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>State</Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="State"
+                                        value={newAddress.state}
+                                        onChangeText={t => setNewAddress({ ...newAddress, state: t })}
+                                    />
+                                </View>
+
+                                <TouchableOpacity 
+                                    style={[styles.saveAddressButton, savingAddress && { opacity: 0.7 }]} 
+                                    onPress={handleAddNewAddress}
+                                    disabled={savingAddress}
+                                >
+                                    {savingAddress ? (
+                                        <ActivityIndicator color={Colors.white} />
+                                    ) : (
+                                        <Text style={styles.saveAddressButtonText}>Save & Select Address</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -382,8 +540,26 @@ const styles = StyleSheet.create({
     sectionHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 14,
+    },
+    sectionHeaderTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 8,
+    },
+    headerAddButton: {
+        backgroundColor: '#FFF7F3',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: Colors.primary,
+    },
+    headerAddButtonText: {
+        color: Colors.primary,
+        fontSize: 12,
+        fontWeight: '700',
     },
     sectionTitle: {
         fontSize: 17,
@@ -617,6 +793,78 @@ const styles = StyleSheet.create({
     placeOrderButtonText: {
         color: Colors.white,
         fontSize: 17,
+        fontWeight: '700',
+    },
+
+    // Modal Styles
+    modalScrollOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+    },
+    modalScrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalInnerContent: {
+        backgroundColor: Colors.white,
+        borderRadius: 16,
+        overflow: 'hidden',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
+        backgroundColor: Colors.BACKGROUND.secondary,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: Colors.TEXT.primary,
+    },
+    formContainer: {
+        padding: 20,
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.TEXT.secondary,
+        marginBottom: 8,
+    },
+    textInput: {
+        backgroundColor: Colors.BACKGROUND.secondary,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 15,
+        color: Colors.TEXT.primary,
+    },
+    rowInputs: {
+        flexDirection: 'row',
+    },
+    saveAddressButton: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    saveAddressButtonText: {
+        color: Colors.white,
+        fontSize: 16,
         fontWeight: '700',
     },
 });

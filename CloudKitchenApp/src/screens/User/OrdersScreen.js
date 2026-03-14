@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert } from 'react-native';
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, Image, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Colors from '../../styles/colors';
@@ -134,11 +135,61 @@ const OrdersScreen = ({ navigation }) => {
 
             <View style={styles.itemsList}>
                 {item.items && item.items.map((orderItem, index) => (
-                    <Text key={index} style={styles.orderItemText}>
-                        {orderItem.quantity}x {orderItem.food_item?.name || 'Item'}
-                    </Text>
+                    <View key={index} style={styles.orderItemCard}>
+                        {orderItem.food_item?.image && (
+                            <Image
+                                source={{ uri: orderItem.food_item.image_url }}
+                                style={styles.orderItemImage}
+                            />
+                        )}
+                        <View style={styles.orderItemInfo}>
+                            <View style={styles.orderItemHeader}>
+                                <Text style={styles.orderItemName} numberOfLines={1}>
+                                    {orderItem.food_name}
+                                </Text>
+                                <View style={[styles.vegBadgeItem, { borderColor: orderItem.food_item?.type === 'veg' ? 'green' : 'red' }]}>
+                                    <View style={[styles.vegDotItem, { backgroundColor: orderItem.food_item?.type === 'veg' ? 'green' : 'red' }]} />
+                                </View>
+                            </View>
+                            <Text style={styles.orderItemDetails}>
+                                {orderItem.quantity} x ₹{orderItem.price}
+                            </Text>
+                        </View>
+                    </View>
                 ))}
             </View>
+
+            {item.delivery_boy ? (
+                <View style={styles.deliveryPartnerBox}>
+                    <View style={styles.deliveryPartnerHeader}>
+                        <Text style={styles.deliveryPartnerTitle}>🚚 Delivery Partner</Text>
+                    </View>
+                    <View style={styles.deliveryPartnerInfo}>
+                        <View style={styles.deliveryPartnerDetails}>
+                            <Text style={styles.deliveryPartnerName}>{item.delivery_boy.name}</Text>
+                            {item.delivery_boy.phone && (
+                                <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.delivery_boy.phone}`)}>
+                                    <Text style={styles.deliveryPartnerPhone}>{item.delivery_boy.phone}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        {item.delivery_boy.phone && (
+                            <TouchableOpacity
+                                style={styles.callButton}
+                                onPress={() => Linking.openURL(`tel:${item.delivery_boy.phone}`)}
+                            >
+                                <Ionicons name="call" size={18} color={Colors.white} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            ) : (
+                item.status !== 'cancelled' && item.status !== 'delivered' && (
+                    <View style={styles.assignedSoonBox}>
+                        <Text style={styles.assignedSoonText}>🚚 Delivery partner will be assigned soon.</Text>
+                    </View>
+                )
+            )}
 
             <View style={styles.orderFooter}>
                 <Text style={styles.totalAmount}>Total: ₹{item.total_amount}</Text>
@@ -150,23 +201,16 @@ const OrdersScreen = ({ navigation }) => {
                         <Text style={styles.invoiceButtonText}>📄 Invoice</Text>
                     </TouchableOpacity>
                     
-                    <TouchableOpacity
-                        onPress={() => {
-                            if (item.delivery_boy_id) {
+                    {item.delivery_boy ? (
+                        <TouchableOpacity
+                            onPress={() => {
                                 Alert.alert("Track Order", "Live tracking feature coming soon!");
-                            }
-                        }}
-                        disabled={!item.delivery_boy_id}
-                        style={[
-                            styles.trackButton,
-                            !item.delivery_boy_id && styles.trackButtonDisabled
-                        ]}
-                    >
-                        <Text style={[
-                            styles.trackButtonText,
-                            !item.delivery_boy_id && styles.trackButtonTextDisabled
-                        ]}>📍 Track</Text>
-                    </TouchableOpacity>
+                            }}
+                            style={styles.trackButton}
+                        >
+                            <Text style={styles.trackButtonText}>📍 Track</Text>
+                        </TouchableOpacity>
+                    ) : null}
                     {item.status === 'pending' && (
                         <TouchableOpacity onPress={() => handleCancel(item.id)} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -370,6 +414,112 @@ const styles = StyleSheet.create({
         color: Colors.TEXT.primary,
         marginBottom: 4,
     },
+    orderItemCard: {
+        flexDirection: 'row',
+        backgroundColor: Colors.BACKGROUND.secondary,
+        borderRadius: 8,
+        padding: 8,
+        marginBottom: 8,
+        alignItems: 'center',
+    },
+    orderItemImage: {
+        width: 45,
+        height: 45,
+        borderRadius: 6,
+        backgroundColor: '#eee',
+    },
+    orderItemInfo: {
+        flex: 1,
+        marginLeft: 10,
+    },
+    orderItemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    orderItemName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.TEXT.primary,
+        flex: 1,
+    },
+    orderItemDetails: {
+        fontSize: 12,
+        color: Colors.TEXT.secondary,
+        marginTop: 2,
+    },
+    vegBadgeItem: {
+        width: 14,
+        height: 14,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 4,
+    },
+    vegDotItem: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    deliveryPartnerBox: {
+        backgroundColor: '#F0F9FF',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#BAE6FD',
+    },
+    deliveryPartnerHeader: {
+        marginBottom: 8,
+    },
+    deliveryPartnerTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#0369A1',
+    },
+    deliveryPartnerInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    deliveryPartnerDetails: {
+        flex: 1,
+    },
+    deliveryPartnerName: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: Colors.TEXT.primary,
+    },
+    deliveryPartnerPhone: {
+        fontSize: 14,
+        color: '#0369A1',
+        marginTop: 2,
+        textDecorationLine: 'underline',
+    },
+    callButton: {
+        backgroundColor: '#10B981',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 12,
+    },
+    assignedSoonBox: {
+        backgroundColor: Colors.BACKGROUND.secondary,
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        borderStyle: 'dashed',
+    },
+    assignedSoonText: {
+        fontSize: 13,
+        color: Colors.TEXT.secondary,
+        fontStyle: 'italic',
+        textAlign: 'center',
+    },
     orderFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -420,13 +570,6 @@ const styles = StyleSheet.create({
         color: '#10B981',
         fontSize: 12,
         fontWeight: '600',
-    },
-    trackButtonDisabled: {
-        borderColor: '#D1D5DB',
-        backgroundColor: '#F3F4F6',
-    },
-    trackButtonTextDisabled: {
-        color: '#9CA3AF',
     },
     rateButton: {
         backgroundColor: Colors.primary,

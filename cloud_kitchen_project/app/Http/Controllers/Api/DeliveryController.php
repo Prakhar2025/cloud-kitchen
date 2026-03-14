@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\Notification;
 
 class DeliveryController extends Controller
 {
@@ -81,6 +82,20 @@ class DeliveryController extends Controller
         }
 
         $order->save();
+
+        // Create notification for user
+        $statusMessages = [
+            'out_for_delivery' => "Your order #{$order->id} is out for delivery!",
+            'delivered' => "Your order #{$order->id} has been delivered! Enjoy your meal.",
+        ];
+
+        if (isset($statusMessages[$request->status])) {
+            Notification::create([
+                'user_id' => $order->user_id,
+                'message' => $statusMessages[$request->status],
+                'is_read' => false
+            ]);
+        }
 
         return response()->json([
             'success' => true,
