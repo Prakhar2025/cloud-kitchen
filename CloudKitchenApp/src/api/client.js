@@ -106,7 +106,6 @@ apiClient.interceptors.response.use(
         if (error.response) {
             const { status, data } = error.response;
 
-            // 401 Unauthorized - Token expired or invalid
             if (status === 401) {
                 // Clear stored auth data
                 await clearAuthData();
@@ -115,7 +114,7 @@ apiClient.interceptors.response.use(
                 // which should redirect to login
                 return Promise.reject({
                     status,
-                    message: ERROR_MESSAGES.UNAUTHORIZED,
+                    message: data?.error || data?.message || ERROR_MESSAGES.UNAUTHORIZED,
                     data,
                 });
             }

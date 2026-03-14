@@ -13,6 +13,23 @@ class ProfileController extends Controller
         return view('user.profile.index');
     }
 
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        $user = auth()->user();
+        $user->name = $request->name;
+        if($request->has('phone')){
+            $user->phone = $request->phone;
+        }
+        $user->save();
+
+        return redirect()->back()->with('success', 'Profile updated successfully.');
+    }
+
     public function addresses()
     {
         $addresses = UserAddress::where('user_id', auth()->id())

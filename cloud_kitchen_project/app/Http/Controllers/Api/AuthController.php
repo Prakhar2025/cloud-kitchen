@@ -273,6 +273,17 @@ class AuthController extends Controller
         }
 
         // ====================================================================
+        // Step 3.5: Delivery Boy Approval Check
+        // ====================================================================
+        if ($user->role === 'delivery' && !$user->is_approved) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Your delivery account is pending admin approval.',
+                'message' => 'Your delivery account is pending admin approval.',
+            ], 401); // 401 Unauthorized
+        }
+
+        // ====================================================================
         // Step 4: Generate new token for this login session
         // ====================================================================
         // Each login creates a new token, allowing multiple device sessions

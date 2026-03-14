@@ -207,6 +207,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/profile', [UserProfileController::class, 'index'])
         ->name('user.profile.index');
 
+    Route::post('/user/profile', [UserProfileController::class, 'updateProfile'])
+        ->name('user.profile.update');
+
     Route::get('/user/addresses', [UserProfileController::class, 'addresses'])
         ->name('user.addresses.index');
 

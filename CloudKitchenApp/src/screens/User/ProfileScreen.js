@@ -13,7 +13,7 @@ const PROFILE_TABS = [
     { key: 'addresses', label: 'My Addresses' },
 ];
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
     const { user, logout, isGuest } = useAuth();
     const [addresses, setAddresses] = useState([]);
     const [activeTab, setActiveTab] = useState('profile');
@@ -89,6 +89,14 @@ const ProfileScreen = () => {
                         </View>
                         <Text style={styles.name}>{user?.name}</Text>
                         <Text style={styles.email}>{user?.email}</Text>
+                        
+                        <TouchableOpacity 
+                            style={styles.editProfileBtn} 
+                            onPress={() => navigation.navigate('EditProfile')}
+                        >
+                            <Text style={styles.editProfileText}>Edit Profile</Text>
+                        </TouchableOpacity>
+
                         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
                             <Text style={styles.logoutText}>Logout</Text>
                         </TouchableOpacity>
@@ -230,8 +238,19 @@ const styles = StyleSheet.create({
         color: Colors.TEXT.secondary,
         marginBottom: 16,
     },
+    editProfileBtn: {
+        backgroundColor: Colors.primary,
+        paddingHorizontal: 24,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginBottom: 12,
+    },
+    editProfileText: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
     logoutBtn: {
-        marginTop: 10,
         paddingHorizontal: 20,
         paddingVertical: 8,
         backgroundColor: '#fee',

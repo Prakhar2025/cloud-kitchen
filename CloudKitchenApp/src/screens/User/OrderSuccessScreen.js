@@ -109,16 +109,6 @@ const OrderSuccessScreen = ({ navigation, route }) => {
     };
 
     /**
-     * Navigate to Orders tab via stack reset
-     */
-    const handleTrackOrder = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Main', params: { tabIndex: 2 } }],
-        });
-    };
-
-    /**
      * Navigate to Menu tab via stack reset
      */
     const handleBackToMenu = () => {
@@ -224,15 +214,6 @@ const OrderSuccessScreen = ({ navigation, route }) => {
                         },
                     ]}
                 >
-                    <TouchableOpacity
-                        style={styles.trackButton}
-                        onPress={handleTrackOrder}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="location-outline" size={20} color={Colors.white} />
-                        <Text style={styles.trackButtonText}>Track Order</Text>
-                    </TouchableOpacity>
-
                     <TouchableOpacity
                         style={styles.menuButton}
                         onPress={handleBackToMenu}

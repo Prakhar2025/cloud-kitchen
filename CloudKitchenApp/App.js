@@ -36,6 +36,7 @@ import InvoiceScreen from './src/screens/User/InvoiceScreen';
 import OrderSuccessScreen from './src/screens/User/OrderSuccessScreen';
 import CategoryScreen from './src/screens/User/CategoryScreen';
 import ForgotPasswordScreen from './src/screens/Auth/ForgotPasswordScreen';
+import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
 
 // Delivery Screens
 import DeliveryDashboardScreen from './src/screens/Delivery/DeliveryDashboardScreen';
@@ -305,6 +306,7 @@ const AppNavigator = () => {
                     // Delivery Stack
                     <>
                         <Stack.Screen name="DeliveryMain" component={DeliveryTabs} />
+                        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_bottom' }} />
                     </>
                 ) : (
                     // Normal User Stack
@@ -318,6 +320,7 @@ const AppNavigator = () => {
                         <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false, gestureEnabled: false }} />
                         <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+                        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_bottom' }} />
                     </>
                 )
             ) : (

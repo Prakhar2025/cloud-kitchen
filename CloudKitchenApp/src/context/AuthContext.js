@@ -251,6 +251,7 @@ export const AuthProvider = ({ children }) => {
         isGuest,
 
         // Methods
+        setUser,
         login,
         register,
         logout,

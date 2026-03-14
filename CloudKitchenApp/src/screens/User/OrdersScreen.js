@@ -149,6 +149,24 @@ const OrdersScreen = ({ navigation }) => {
                     >
                         <Text style={styles.invoiceButtonText}>📄 Invoice</Text>
                     </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (item.delivery_boy_id) {
+                                Alert.alert("Track Order", "Live tracking feature coming soon!");
+                            }
+                        }}
+                        disabled={!item.delivery_boy_id}
+                        style={[
+                            styles.trackButton,
+                            !item.delivery_boy_id && styles.trackButtonDisabled
+                        ]}
+                    >
+                        <Text style={[
+                            styles.trackButtonText,
+                            !item.delivery_boy_id && styles.trackButtonTextDisabled
+                        ]}>📍 Track</Text>
+                    </TouchableOpacity>
                     {item.status === 'pending' && (
                         <TouchableOpacity onPress={() => handleCancel(item.id)} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -389,6 +407,26 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontSize: 12,
         fontWeight: '600',
+    },
+    trackButton: {
+        borderWidth: 1,
+        borderColor: '#10B981',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        marginLeft: 4,
+    },
+    trackButtonText: {
+        color: '#10B981',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    trackButtonDisabled: {
+        borderColor: '#D1D5DB',
+        backgroundColor: '#F3F4F6',
+    },
+    trackButtonTextDisabled: {
+        color: '#9CA3AF',
     },
     rateButton: {
         backgroundColor: Colors.primary,

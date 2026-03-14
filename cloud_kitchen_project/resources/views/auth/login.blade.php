@@ -130,6 +130,12 @@
         <h4 class="fw-bold mb-1">Login</h4>
         <p class="text-muted mb-4">Access your account</p>
 
+        @if(session('error'))
+            <div class="alert alert-danger">
+                {{ session('error') }}
+            </div>
+        @endif
+
         @if(session('status'))
             <div class="alert alert-success">
                 {{ session('status') }}
