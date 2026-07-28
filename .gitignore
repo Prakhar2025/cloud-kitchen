@@ -32,3 +32,5 @@ __MACOSX
 # Laravel Vendors (handled by composer)
 /cloud_kitchen_project/vendor/
 /cloud_kitchen_project/storage/*.key
+
+*txt
