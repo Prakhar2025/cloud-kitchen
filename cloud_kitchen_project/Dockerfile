@@ -37,7 +37,11 @@ RUN composer install --no-dev --optimize-autoloader
 # Install NPM dependencies and build Vite assets
 RUN npm install && npm run build
 
-# Set correct permissions for Laravel
+# Create missing Laravel storage directories and set correct permissions
+RUN mkdir -p /var/www/html/storage/framework/sessions \
+    /var/www/html/storage/framework/views \
+    /var/www/html/storage/framework/cache \
+    /var/www/html/bootstrap/cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Start Apache

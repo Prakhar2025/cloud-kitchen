@@ -54,7 +54,7 @@ const getDevApiUrl = () => {
  */
 export const API_BASE_URL = __DEV__
   ? getDevApiUrl()
-  : 'https://your-production-api.com';
+  : 'https://cloud-kitchen-arvd.onrender.com';
 
 /**
  * API Version prefix
