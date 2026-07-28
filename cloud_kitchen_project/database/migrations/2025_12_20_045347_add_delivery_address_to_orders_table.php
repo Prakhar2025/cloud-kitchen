@@ -13,10 +13,10 @@ return new class extends Migration
 {
     Schema::table('orders', function (Blueprint $table) {
         $table->string('delivery_name')->after('user_id');
-        $table->string('delivery_phone')->after('delivery_name');
-        $table->text('delivery_address')->after('delivery_phone');
-        $table->string('delivery_city')->after('delivery_address');
-        $table->string('delivery_pincode')->after('delivery_city');
+        $table->string('delivery_phone');
+        $table->text('delivery_address');
+        $table->string('delivery_city');
+        $table->string('delivery_pincode');
     });
 }
 

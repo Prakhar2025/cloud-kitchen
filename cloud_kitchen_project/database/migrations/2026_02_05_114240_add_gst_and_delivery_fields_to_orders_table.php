@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->decimal('subtotal', 10, 2)->nullable()->after('total_amount');
-            $table->decimal('gst_amount', 10, 2)->nullable()->after('subtotal');
-            $table->decimal('delivery_charge', 10, 2)->default(0)->after('gst_amount');
-            $table->decimal('payment_processing_fee', 10, 2)->default(0)->after('delivery_charge');
+            $table->decimal('gst_amount', 10, 2)->nullable();
+            $table->decimal('delivery_charge', 10, 2)->default(0);
+            $table->decimal('payment_processing_fee', 10, 2)->default(0);
         });
     }
 

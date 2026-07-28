@@ -8,9 +8,9 @@ return new class extends Migration {
     {
         Schema::table('user_addresses', function (Blueprint $table) {
             $table->string('house_no')->nullable()->after('phone');
-            $table->string('building_name')->nullable()->after('house_no');
-            $table->string('street_name')->nullable()->after('building_name');
-            $table->string('landmark')->nullable()->after('street_name');
+            $table->string('building_name')->nullable();
+            $table->string('street_name')->nullable();
+            $table->string('landmark')->nullable();
         });
     }
 
