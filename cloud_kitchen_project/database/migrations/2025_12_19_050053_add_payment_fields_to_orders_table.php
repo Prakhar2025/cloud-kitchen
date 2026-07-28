@@ -13,6 +13,9 @@ return new class extends Migration
 {
     Schema::table('orders', function (Blueprint $table) {
         $table->string('payment_method')->after('total_amount');
+    });
+
+    Schema::table('orders', function (Blueprint $table) {
         $table->string('payment_status')->default('pending')->after('payment_method');
     });
 }

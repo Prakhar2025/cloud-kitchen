@@ -1,24 +1,29 @@
 {
-    "expo": {
-        "name": "Cloud Kitchen",
-        "slug": "cloud-kitchen-app",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "userInterfaceStyle": "light",
-        "splash": {
-            "resizeMode": "contain",
-            "backgroundColor": "#FF6B35"
-        },
-        "ios": {
-            "supportsTablet": true,
-            "bundleIdentifier": "com.cloudkitchen.app"
-        },
-        "android": {
-            "package": "com.cloudkitchen.app",
-            "usesCleartextTraffic": true
-        },
-        "web": {
-            "bundler": "metro"
-        }
+  "expo": {
+    "name": "Cloud Kitchen",
+    "slug": "cloud-kitchen-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B35"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cloudkitchen.app"
+    },
+    "android": {
+      "package": "com.cloudkitchen.app",
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1415ef7f-4d50-4536-82e0-07167f4d86c9"
+      }
     }
+  }
 }

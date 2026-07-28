@@ -1,0 +1,2 @@
+# Ignore the Laravel backend folder when uploading to Expo EAS
+cloud_kitchen_project/
