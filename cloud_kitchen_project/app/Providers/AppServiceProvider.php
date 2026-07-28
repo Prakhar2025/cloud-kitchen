@@ -20,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
  public function boot(): void
 {
+    if (str_contains(config('app.url'), 'onrender.com')) {
+        \Illuminate\Support\Facades\URL::forceScheme('https');
+    }
+
     View::composer('user.layout', function ($view) {
         $categories = Category::where('status', 1)->get();
         $view->with('categories', $categories);
