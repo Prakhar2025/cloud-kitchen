@@ -44,5 +44,5 @@ RUN mkdir -p /var/www/html/storage/framework/sessions \
     /var/www/html/bootstrap/cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Start Apache (and run migrations automatically on startup)
+CMD php artisan migrate --force && php artisan db:seed --force && apache2-foreground
